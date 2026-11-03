@@ -24,8 +24,8 @@ const MODULOS_EXTRA: Record<Nivel, Modulo[]> = {
   tecnico: ['saberPro'],
   tecnologo: ['saberPro'],
   profesional: ['saberPro'],
-  especializacion: ['trabajoGrado', 'lecturas'],
-  maestria: ['trabajoGrado', 'lecturas'],
+  especializacion: ['trabajoGrado', 'lecturas', 'bitacora'],
+  maestria: ['trabajoGrado', 'lecturas', 'bitacora'],
   doctorado: ['trabajoGrado', 'lecturas', 'bitacora'],
 };
 
@@ -34,9 +34,14 @@ export function modulosDisponibles(nivel: Nivel): Modulo[] {
   return [...MODULOS_BASE, ...MODULOS_EXTRA[nivel]];
 }
 
-/** Módulos activos por defecto al crear un perfil. Saber Pro / TyT es opcional y arranca apagado. */
+/**
+ * Módulos activos por defecto al crear un perfil. Saber Pro / TyT es opcional y arranca apagado;
+ * la bitácora arranca encendida solo en doctorado (en especialización y maestría se puede activar).
+ */
 export function modulosSugeridos(nivel: Nivel): Modulo[] {
-  const extra = MODULOS_EXTRA[nivel].filter((m) => m !== 'saberPro');
+  const extra = MODULOS_EXTRA[nivel].filter(
+    (m) => m !== 'saberPro' && (m !== 'bitacora' || nivel === 'doctorado'),
+  );
   const base = nivel === 'doctorado' ? MODULOS_BASE.filter((m) => m !== 'notas') : MODULOS_BASE;
   return [...base, ...extra];
 }

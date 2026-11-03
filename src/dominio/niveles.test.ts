@@ -114,6 +114,8 @@ describe('módulos por nivel', () => {
       expect.arrayContaining(['trabajoGrado', 'lecturas', 'bitacora']),
     );
     expect(modulosSugeridos('doctorado')).not.toContain('notas');
+    expect(modulosDisponibles('maestria')).toContain('bitacora');
+    expect(modulosSugeridos('maestria')).not.toContain('bitacora');
     expect(modulosDisponibles('bachillerato')).not.toContain('trabajoGrado');
   });
 });
