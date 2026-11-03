@@ -10,6 +10,7 @@ import { Bienvenida } from '@/vistas/Bienvenida';
 import { EnConstruccion } from '@/vistas/EnConstruccion';
 import { Errores } from '@/vistas/Errores';
 import { Repasar } from '@/vistas/Repasar';
+import { NotasPlan } from '@/vistas/NotasPlan';
 import { recalcularDominios } from '@/db/operaciones';
 import { Inicio } from '@/vistas/Inicio';
 import { Materias } from '@/vistas/Materias';
@@ -71,6 +72,9 @@ export function App() {
       break;
     case '/materias':
       contenido = <Materias materiaId={parametro} />;
+      break;
+    case '/notas':
+      contenido = <NotasPlan />;
       break;
     case '/repasar':
       contenido = <Repasar />;
