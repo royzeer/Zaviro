@@ -10,6 +10,7 @@ import {
   registrarError,
 } from './operaciones';
 import { cargarModulosEjemplo } from './datosEjemploModulos';
+import { dosCables } from '@/dominio/ejemplos/mecanica';
 import type { Calificacion } from '@/dominio/repaso';
 import { guardar, nuevoId } from './repositorio';
 import { modulosSugeridos, reglasSugeridas } from '@/dominio/niveles';
@@ -351,6 +352,27 @@ export async function cargarDatosEjemplo(base: ZaviroDB = db) {
     },
     base,
   );
+
+  // Un ejemplo resuelto guardado desde la biblioteca, en el tema de equilibrio.
+  const equilibrio = temas.find((t) => t.titulo === 'Equilibrio de partículas');
+  if (equilibrio) {
+    const s = dosCables.resolver({ W: 800, alfa: 35, beta: 60 });
+    await guardar(
+      'ejemplos',
+      {
+        id: nuevoId(),
+        temaId: equilibrio.id,
+        titulo: 'Semáforo colgado de dos cables',
+        enunciado: s.enunciado.replace('Un objeto', 'Un semáforo'),
+        pasos: s.pasos,
+        comprobacion: s.comprobacion,
+        ...(s.diagrama ? { diagrama: s.diagrama } : {}),
+        origen: dosCables.id,
+        esEjemplo: true,
+      },
+      base,
+    );
+  }
 
   const { colegio, maestria } = await cargarModulosEjemplo(hoy, tecnologo.id, base);
   // El perfil de pregrado queda activo al terminar.

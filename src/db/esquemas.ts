@@ -11,6 +11,7 @@ import {
   TIPOS_ERROR,
   TIPOS_MATERIA,
 } from '@/dominio/catalogo';
+import { TIPOS_FUERZA } from '@/dominio/fuerzas';
 
 /**
  * Esquemas Zod de todas las entidades. Todo lo que entra a la base de datos
@@ -195,6 +196,15 @@ export const sesionEsquema = z.object({
   esEjemplo,
 });
 
+export const fuerzaEsquema = z.object({
+  nombre: z.string().min(1),
+  tipo: z.enum(TIPOS_FUERZA),
+  magnitud: z.number().min(0),
+  /** Grados desde el eje x positivo, en sentido antihorario. */
+  angulo: z.number(),
+  unidad: z.string(),
+});
+
 export const ejemploResueltoEsquema = z.object({
   id,
   temaId: id,
@@ -202,11 +212,24 @@ export const ejemploResueltoEsquema = z.object({
   enunciado: z.string(),
   pasos: z.array(
     z.object({
+      /** Qué se hace y por qué, en palabras. */
       descripcion: z.string(),
+      /** Fórmula o despeje con los números. */
+      calculo: z.string().optional(),
+      /** Resultado con su unidad. */
       valor: z.string().optional(),
     }),
   ),
   comprobacion: z.string(),
+  diagrama: z
+    .object({
+      cuerpo: z.enum(['bloque', 'particula']),
+      inclinacion: z.number().min(0).max(89),
+      fuerzas: z.array(fuerzaEsquema).min(1),
+    })
+    .optional(),
+  /** Ejemplo de la biblioteca del que salió esta copia, si aplica. */
+  origen: z.string().optional(),
   esEjemplo,
 });
 
@@ -296,6 +319,7 @@ export type TarjetaRepaso = z.infer<typeof tarjetaEsquema>;
 export type Repaso = z.infer<typeof repasoEsquema>;
 export type SesionEstudio = z.infer<typeof sesionEsquema>;
 export type EjemploResuelto = z.infer<typeof ejemploResueltoEsquema>;
+export type FuerzaGuardada = z.infer<typeof fuerzaEsquema>;
 export type SimulacroSaber11 = z.infer<typeof simulacroSaber11Esquema>;
 export type HitoTrabajoGrado = z.infer<typeof hitoEsquema>;
 export type Lectura = z.infer<typeof lecturaEsquema>;
