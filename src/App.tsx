@@ -7,6 +7,7 @@ import { usePerfil } from '@/estado/usePerfil';
 import { useSesion } from '@/estado/sesion';
 import { useSincronizacionAutomatica } from '@/sincronizacion/useSincronizacionAutomatica';
 import { Acceso } from '@/vistas/Acceso';
+import { CentroDocumentos } from '@/vistas/apuntes/SubirDocumento';
 import { Apuntes } from '@/vistas/Apuntes';
 import { Bienvenida } from '@/vistas/Bienvenida';
 import { EnConstruccion } from '@/vistas/EnConstruccion';
@@ -146,13 +147,16 @@ function AppConSesion() {
   }
 
   return (
-    <Marco
-      titulo={def.ruta === '/materias' ? vocab.materias : def.titulo}
-      descripcion={def.descripcion}
-    >
-      <div key={def.ruta}>
-        <Suspense fallback={<Cargando />}>{contenido}</Suspense>
-      </div>
-    </Marco>
+    <>
+      <Marco
+        titulo={def.ruta === '/materias' ? vocab.materias : def.titulo}
+        descripcion={def.descripcion}
+      >
+        <div key={def.ruta}>
+          <Suspense fallback={<Cargando />}>{contenido}</Suspense>
+        </div>
+      </Marco>
+      <CentroDocumentos />
+    </>
   );
 }

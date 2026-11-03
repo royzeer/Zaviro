@@ -4,6 +4,7 @@ import { useConsulta } from '@/db/useConsulta';
 import { NOMBRE_NIVEL, type Nivel } from '@/dominio/catalogo';
 import { duracion } from '@/utilidades/numeros';
 import { cargarPlan } from '../notas/datosPlan';
+import { SubirDocumento } from '../apuntes/SubirDocumento';
 
 interface Props {
   perfil: PerfilAcademico;
@@ -62,9 +63,12 @@ export function PlanDeHoy({ perfil, base }: Props) {
             Hoy no hay bloques en tu plan. El tema que más rinde es {top.tema.titulo}.
           </p>
         ) : (
-          <p className="text-tinta-suave">
-            Agrega temas con su peso y la fecha del examen para calcular dónde rinde más tu hora.
-          </p>
+          <>
+            <p className="text-tinta-suave">
+              Sube tus apuntes y Zaviro arma el plan con sus temas.
+            </p>
+            <SubirDocumento className="boton-secundario mt-3 px-3 py-2 text-xs" />
+          </>
         )}
       </Casilla>
       <Casilla titulo="Repaso corto" href="/repasar" accion="Repasar ahora">

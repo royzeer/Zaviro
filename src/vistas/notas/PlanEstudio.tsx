@@ -6,6 +6,7 @@ import { ahoraIso, guardar, guardarAjuste, nuevoId } from '@/db/repositorio';
 import { Interruptor, NumeroEntrada } from '@/componentes/Formulario';
 import { EstadoVacio, Tarjeta } from '@/componentes/Tarjeta';
 import { clavePlan, type DatosPlan } from './datosPlan';
+import { SubirDocumento } from '../apuntes/SubirDocumento';
 import { duracion } from '@/utilidades/numeros';
 
 const DIAS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
@@ -83,7 +84,10 @@ export function PlanEstudio({ perfil, datos }: { perfil: PerfilAcademico; datos:
       )}
 
       {plan.dias.every((d) => d.bloques.length === 0 && d.minutosRepaso === 0) ? (
-        <EstadoVacio texto="No hay nada que planear todavía. Agrega temas y la fecha de tus exámenes." />
+        <EstadoVacio
+          texto="No hay nada que planear todavía. Sube tus apuntes en PDF o Word y el plan se arma solo con sus temas."
+          accion={<SubirDocumento className="boton-primario" />}
+        />
       ) : (
         <ol className="flex flex-col gap-3">
           {dias.map((d, i) => (

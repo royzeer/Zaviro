@@ -14,6 +14,7 @@ import { Icono } from '@/componentes/Icono';
 import { EstadoVacio } from '@/componentes/Tarjeta';
 import { fechaCorta } from '@/utilidades/fechas';
 import { markdownAHtml, resumenMarkdown } from '@/utilidades/markdown';
+import { SubirDocumento } from './apuntes/SubirDocumento';
 
 function Editor({ inicial, esNuevo }: { inicial: Apunte; esNuevo: boolean }) {
   const { perfil } = usePerfil();
@@ -227,11 +228,14 @@ export function Apuntes({ apunteId }: { apunteId?: string }) {
   if (materias.length === 0) {
     return (
       <EstadoVacio
-        texto="Primero crea una materia; cada apunte pertenece a una."
+        texto="Sube un PDF o un Word con tus apuntes: Zaviro crea la materia, los temas y tu plan de estudio. También puedes crear la materia a mano."
         accion={
-          <a href="#/materias" className="boton-primario">
-            Ir a materias
-          </a>
+          <div className="flex flex-wrap justify-center gap-2">
+            <SubirDocumento className="boton-primario" />
+            <a href="#/materias" className="boton-secundario">
+              Ir a materias
+            </a>
+          </div>
         }
       />
     );
@@ -249,6 +253,7 @@ export function Apuntes({ apunteId }: { apunteId?: string }) {
         >
           <Icono nombre="mas" tamano={16} /> Nuevo apunte
         </a>
+        <SubirDocumento />
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
           <select
             className="campo"
