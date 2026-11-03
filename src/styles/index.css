@@ -28,6 +28,12 @@
     --oxido: 168 92 42;
     --brillo: 214 160 60;
     --sombra: 60 45 30;
+    /* Fuerzas del diagrama de cuerpo libre: un color por tipo. */
+    --f-peso: 184 52 42;
+    --f-normal: 37 99 165;
+    --f-friccion: 191 104 18;
+    --f-tension: 38 120 72;
+    --f-aplicada: 122 79 160;
   }
 
   :root[data-tema='oscuro'] {
@@ -48,6 +54,11 @@
     --oxido: 214 140 86;
     --brillo: 236 190 96;
     --sombra: 0 0 0;
+    --f-peso: 236 118 104;
+    --f-normal: 112 166 232;
+    --f-friccion: 232 154 74;
+    --f-tension: 112 196 140;
+    --f-aplicada: 186 148 226;
   }
 
   html {
