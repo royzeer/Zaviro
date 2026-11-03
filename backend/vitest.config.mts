@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  // La API no usa CSS: así Vite no busca el PostCSS de la app en la carpeta de arriba.
+  css: { postcss: { plugins: [] } },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
