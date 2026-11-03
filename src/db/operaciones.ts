@@ -1,0 +1,170 @@
+import { db, type ZaviroDB } from './db';
+import type { Apunte, Materia, PerfilAcademico, Reglas, Tema } from './esquemas';
+import { ahoraIso, guardar, guardarAjuste, nuevoId, obtenerAjuste } from './repositorio';
+import type { Area, Modulo, Nivel } from '@/dominio/catalogo';
+
+/** Operaciones de dominio sobre la base local (crear, borrar en cascada, etc.). */
+
+export const CLAVE_PERFIL_ACTIVO = 'perfilActivoId';
+
+export interface DatosNuevoPerfil {
+  nivel: Nivel;
+  area: Area;
+  institucion: string;
+  programa?: string;
+  reglas: Reglas;
+  modulosActivos: Modulo[];
+  creditosPrograma?: number;
+  esEjemplo?: boolean;
+}
+
+export async function crearPerfil(datos: DatosNuevoPerfil, base: ZaviroDB = db) {
+  const perfil: PerfilAcademico = { id: nuevoId(), creadoEn: ahoraIso(), ...datos };
+  await guardar('perfiles', perfil, base);
+  await guardarAjuste(CLAVE_PERFIL_ACTIVO, perfil.id, base);
+  return perfil;
+}
+
+/** Devuelve el perfil activo; si el guardado ya no existe, usa el primero disponible. */
+export async function perfilActivo(base: ZaviroDB = db): Promise<PerfilAcademico | undefined> {
+  const id = await obtenerAjuste<string>(CLAVE_PERFIL_ACTIVO, base);
+  const perfil = id ? await base.perfiles.get(id) : undefined;
+  return perfil ?? (await base.perfiles.orderBy('id').first());
+}
+
+export async function activarPerfil(id: string, base: ZaviroDB = db) {
+  await guardarAjuste(CLAVE_PERFIL_ACTIVO, id, base);
+}
+
+/** Borra una materia con sus temas, apuntes, errores, tarjetas y ejemplos. */
+export async function borrarMateria(materiaId: string, base: ZaviroDB = db) {
+  await base.transaction(
+    'rw',
+    [
+      base.materias,
+      base.temas,
+      base.apuntes,
+      base.errores,
+      base.tarjetas,
+      base.ejemplos,
+      base.conceptosRaiz,
+    ],
+    async () => {
+      const temaIds = await base.temas.where('materiaId').equals(materiaId).primaryKeys();
+      for (const t of temaIds) await borrarTemaInterno(t, base);
+      const apunteIds = await base.apuntes.where('materiaId').equals(materiaId).primaryKeys();
+      const errorIds = await base.errores.where('materiaId').equals(materiaId).primaryKeys();
+      await borrarTarjetasDe('apunte', apunteIds, base);
+      await borrarTarjetasDe('error', errorIds, base);
+      await base.apuntes.bulkDelete(apunteIds);
+      await base.errores.bulkDelete(errorIds);
+      // Ninguna otra materia puede tener esta como prerrequisito.
+      await base.materias
+        .filter((m) => m.prerrequisitos?.includes(materiaId) ?? false)
+        .modify((m) => {
+          m.prerrequisitos = m.prerrequisitos?.filter((p) => p !== materiaId);
+        });
+      await base.materias.delete(materiaId);
+    },
+  );
+}
+
+async function borrarTarjetasDe(tipo: 'apunte' | 'error', ids: string[], base: ZaviroDB) {
+  if (ids.length === 0) return;
+  await base.tarjetas
+    .where('[origenTipo+origenId]')
+    .anyOf(ids.map((i) => [tipo, i]))
+    .delete();
+}
+
+async function borrarTemaInterno(temaId: string, base: ZaviroDB) {
+  await base.ejemplos.where('temaId').equals(temaId).delete();
+  await base.apuntes
+    .where('temaId')
+    .equals(temaId)
+    .modify((a) => {
+      delete a.temaId;
+    });
+  const errorIds = await base.errores.where('temaId').equals(temaId).primaryKeys();
+  await borrarTarjetasDe('error', errorIds, base);
+  await base.errores.bulkDelete(errorIds);
+  await base.tarjetas.where('temaId').equals(temaId).delete();
+  await base.conceptosRaiz
+    .where('temaIds')
+    .equals(temaId)
+    .modify((c) => {
+      c.temaIds = c.temaIds.filter((t) => t !== temaId);
+    });
+  await base.temas.delete(temaId);
+}
+
+/** Borra un tema; sus apuntes se conservan en la materia, sin tema. */
+export async function borrarTema(temaId: string, base: ZaviroDB = db) {
+  await base.transaction(
+    'rw',
+    [base.temas, base.apuntes, base.errores, base.tarjetas, base.ejemplos, base.conceptosRaiz],
+    () => borrarTemaInterno(temaId, base),
+  );
+}
+
+/** Borra un perfil con todas sus materias y sus módulos propios. */
+export async function borrarPerfil(perfilId: string, base: ZaviroDB = db) {
+  const materiaIds = await base.materias.where('perfilId').equals(perfilId).primaryKeys();
+  for (const m of materiaIds) await borrarMateria(m, base);
+  await base.transaction(
+    'rw',
+    [base.perfiles, base.simulacros, base.hitos, base.lecturas, base.ajustes],
+    async () => {
+      await base.simulacros.where('perfilId').equals(perfilId).delete();
+      await base.hitos.where('perfilId').equals(perfilId).delete();
+      await base.lecturas.where('perfilId').equals(perfilId).delete();
+      await base.perfiles.delete(perfilId);
+      const activo = await obtenerAjuste<string>(CLAVE_PERFIL_ACTIVO, base);
+      if (activo === perfilId) {
+        const otro = await base.perfiles.orderBy('id').first();
+        if (otro) await guardarAjuste(CLAVE_PERFIL_ACTIVO, otro.id, base);
+        else await base.ajustes.delete(CLAVE_PERFIL_ACTIVO);
+      }
+    },
+  );
+}
+
+/** Cortes iniciales de una materia nueva, copiados de las reglas del perfil. */
+export function cortesIniciales(reglas: Reglas): Materia['cortes'] {
+  if (reglas.evaluacion.tipo === 'hitos') return [];
+  return reglas.evaluacion.componentes.map((c) => ({
+    nombre: c.nombre,
+    peso: c.peso,
+    ...(reglas.evaluacion.tipo === 'evidencias' ? { estado: 'pendiente' as const } : {}),
+  }));
+}
+
+export const COLORES_MATERIA = [
+  '#8b6f52',
+  '#2e7d3c',
+  '#3d6b8c',
+  '#a85c2a',
+  '#7a5c8e',
+  '#b8862f',
+  '#4f7d74',
+  '#9c4a5a',
+];
+
+export async function materiasDePerfil(perfilId: string, base: ZaviroDB = db): Promise<Materia[]> {
+  const lista = await base.materias.where('perfilId').equals(perfilId).toArray();
+  return lista.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+}
+
+export async function temasDeMaterias(materiaIds: string[], base: ZaviroDB = db): Promise<Tema[]> {
+  if (materiaIds.length === 0) return [];
+  return base.temas.where('materiaId').anyOf(materiaIds).toArray();
+}
+
+export async function apuntesDeMaterias(
+  materiaIds: string[],
+  base: ZaviroDB = db,
+): Promise<Apunte[]> {
+  if (materiaIds.length === 0) return [];
+  const lista = await base.apuntes.where('materiaId').anyOf(materiaIds).toArray();
+  return lista.sort((a, b) => b.fecha.localeCompare(a.fecha));
+}
