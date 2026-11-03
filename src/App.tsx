@@ -8,6 +8,7 @@ import { Ajustes } from '@/vistas/Ajustes';
 import { Apuntes } from '@/vistas/Apuntes';
 import { Bienvenida } from '@/vistas/Bienvenida';
 import { EnConstruccion } from '@/vistas/EnConstruccion';
+import { Errores } from '@/vistas/Errores';
 import { Inicio } from '@/vistas/Inicio';
 import { Materias } from '@/vistas/Materias';
 import { Perfil } from '@/vistas/Perfil';
@@ -64,6 +65,9 @@ export function App() {
       break;
     case '/materias':
       contenido = <Materias materiaId={parametro} />;
+      break;
+    case '/errores':
+      contenido = <Errores />;
       break;
     case '/apuntes':
       contenido = <Apuntes apunteId={parametro} />;
