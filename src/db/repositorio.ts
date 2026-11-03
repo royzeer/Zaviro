@@ -70,13 +70,17 @@ export async function contarTodo(base: ZaviroDB = db): Promise<Record<TablaDatos
 /** Borra todos los registros marcados como datos de ejemplo, en una sola transacción. */
 export async function borrarDatosEjemplo(base: ZaviroDB = db): Promise<number> {
   let borrados = 0;
-  await base.transaction('rw', TABLAS_DATOS.map((t) => base[t]), async () => {
-    for (const t of TABLAS_DATOS) {
-      const tabla = base[t] as unknown as {
-        filter: (f: (v: { esEjemplo?: boolean }) => boolean) => { delete: () => Promise<number> };
-      };
-      borrados += await tabla.filter((v) => v.esEjemplo === true).delete();
-    }
-  });
+  await base.transaction(
+    'rw',
+    TABLAS_DATOS.map((t) => base[t]),
+    async () => {
+      for (const t of TABLAS_DATOS) {
+        const tabla = base[t] as unknown as {
+          filter: (f: (v: { esEjemplo?: boolean }) => boolean) => { delete: () => Promise<number> };
+        };
+        borrados += await tabla.filter((v) => v.esEjemplo === true).delete();
+      }
+    },
+  );
   return borrados;
 }

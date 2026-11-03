@@ -19,9 +19,7 @@ export default defineConfig({
         background_color: '#f6f1e7',
         display: 'standalone',
         start_url: '.',
-        icons: [
-          { src: 'icono.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
-        ],
+        icons: [{ src: 'icono.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],

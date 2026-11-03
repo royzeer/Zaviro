@@ -1,0 +1,104 @@
+@import '@fontsource-variable/manrope';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Tokens de color de Zaviro (canales RGB para poder usar opacidad en Tailwind).
+  Paleta: arena/taupe en la barra lateral, fondo greige, tarjetas crema,
+  acciones en café oscuro, verde para lo que va bien y rojo para lo que falla.
+*/
+@layer base {
+  :root {
+    color-scheme: light;
+    --fondo: 233 229 221;
+    --superficie: 247 245 240;
+    --superficie-2: 238 234 226;
+    --lateral: 163 145 122;
+    --lateral-tinta: 36 27 21;
+    --tinta: 43 33 27;
+    --tinta-suave: 104 93 84;
+    --linea: 216 209 198;
+    --primario: 62 47 37;
+    --sobre-primario: 248 243 235;
+    --acento: 139 111 82;
+    --exito: 46 125 60;
+    --peligro: 184 52 42;
+    --oxido: 168 92 42;
+    --brillo: 214 160 60;
+    --sombra: 60 45 30;
+  }
+
+  :root[data-tema='oscuro'] {
+    color-scheme: dark;
+    --fondo: 27 24 21;
+    --superficie: 37 33 29;
+    --superficie-2: 46 41 36;
+    --lateral: 58 49 41;
+    --lateral-tinta: 236 228 216;
+    --tinta: 237 230 220;
+    --tinta-suave: 172 160 148;
+    --linea: 64 56 49;
+    --primario: 214 194 168;
+    --sobre-primario: 32 26 22;
+    --acento: 196 165 128;
+    --exito: 110 190 120;
+    --peligro: 232 110 98;
+    --oxido: 214 140 86;
+    --brillo: 236 190 96;
+    --sombra: 0 0 0;
+  }
+
+  html {
+    @apply bg-fondo text-tinta antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+
+  body {
+    @apply min-h-dvh bg-fondo font-sans text-[15px] leading-relaxed;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-acento ring-offset-2 ring-offset-fondo;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      transition-duration: 1ms !important;
+    }
+  }
+}
+
+@layer components {
+  .tarjeta {
+    @apply rounded-tarjeta border border-linea/70 bg-superficie p-5 shadow-tarjeta;
+  }
+  .titulo-tarjeta {
+    @apply text-base font-bold tracking-tight text-tinta;
+  }
+  .boton {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .boton-primario {
+    @apply boton bg-primario text-sobre-primario hover:bg-primario/90;
+  }
+  .boton-secundario {
+    @apply boton border border-tinta/25 bg-superficie text-tinta hover:bg-superficie-2;
+  }
+  .boton-fantasma {
+    @apply boton px-3 text-tinta-suave hover:bg-superficie-2 hover:text-tinta;
+  }
+  .campo {
+    @apply w-full rounded-xl border border-linea bg-superficie px-3.5 py-2.5 text-sm text-tinta placeholder:text-tinta-suave/70 focus:border-acento;
+  }
+  .etiqueta {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-tinta-suave;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full bg-superficie-2 px-2.5 py-0.5 text-xs font-semibold text-tinta-suave;
+  }
+}

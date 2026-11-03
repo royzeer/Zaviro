@@ -82,13 +82,7 @@ export type Modulo = (typeof MODULOS)[number];
 export const TIPOS_MATERIA = ['cuantitativa', 'teorica', 'laboratorio', 'programacion'] as const;
 export type TipoMateria = (typeof TIPOS_MATERIA)[number];
 
-export const TIPOS_ERROR = [
-  'concepto',
-  'procedimiento',
-  'calculo',
-  'lectura',
-  'descuido',
-] as const;
+export const TIPOS_ERROR = ['concepto', 'procedimiento', 'calculo', 'lectura', 'descuido'] as const;
 export type TipoError = (typeof TIPOS_ERROR)[number];
 
 export const NOMBRE_TIPO_ERROR: Record<TipoError, string> = {

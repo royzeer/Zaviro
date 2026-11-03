@@ -4,14 +4,18 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="Zaviro: tu espacio personal de estudio, adaptado a tu nivel académico." />
+    <meta
+      name="description"
+      content="Zaviro: tu espacio personal de estudio, adaptado a tu nivel académico."
+    />
     <meta name="theme-color" content="#e9e5dd" />
     <title>Zaviro</title>
     <script>
       // Aplica el tema guardado antes de pintar para evitar un destello.
       try {
         var t = localStorage.getItem('zaviro-tema');
-        var oscuro = t === 'oscuro' || (t !== 'claro' && matchMedia('(prefers-color-scheme: dark)').matches);
+        var oscuro =
+          t === 'oscuro' || (t !== 'claro' && matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.dataset.tema = oscuro ? 'oscuro' : 'claro';
       } catch (e) {}
     </script>

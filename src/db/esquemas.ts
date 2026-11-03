@@ -204,7 +204,9 @@ export const lecturaEsquema = z.object({
   referencia: z.string().min(1),
   estado: z.enum(ESTADOS_LECTURA),
   notas: z.string(),
-  citas: z.array(z.object({ texto: z.string().min(1), fuente: z.string(), pagina: z.string().optional() })),
+  citas: z.array(
+    z.object({ texto: z.string().min(1), fuente: z.string(), pagina: z.string().optional() }),
+  ),
   esEjemplo,
 });
 
