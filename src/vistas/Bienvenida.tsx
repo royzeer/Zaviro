@@ -22,6 +22,7 @@ import {
 import { EditorReglas } from '@/componentes/EditorReglas';
 import { Campo, NumeroEntrada } from '@/componentes/Formulario';
 import { Icono } from '@/componentes/Icono';
+import { useSesion } from '@/estado/sesion';
 import { Respaldo } from './ajustes/Respaldo';
 
 const DESCRIPCION_NIVEL: Record<Nivel, string> = {
@@ -35,6 +36,22 @@ const DESCRIPCION_NIVEL: Record<Nivel, string> = {
 };
 
 const PASOS = ['Nivel', 'Área', 'Reglas', 'Módulos'];
+
+/** Sin perfil no se ve el menú: desde aquí también se puede cerrar la sesión. */
+function BotonSalir() {
+  const usuario = useSesion((s) => s.usuario);
+  const cerrarSesion = useSesion((s) => s.cerrarSesion);
+  if (!usuario) return null;
+  return (
+    <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+      <span className="hidden text-xs text-tinta-suave sm:block">{usuario.correo}</span>
+      <button className="boton-fantasma" onClick={() => void cerrarSesion(true)}>
+        <Icono nombre="salir" tamano={16} />
+        Salir
+      </button>
+    </div>
+  );
+}
 
 export function Bienvenida({ primeraVez }: { primeraVez: boolean }) {
   const [paso, setPaso] = useState(0);
@@ -103,7 +120,9 @@ export function Bienvenida({ primeraVez }: { primeraVez: boolean }) {
               </p>
             </div>
           </div>
-          {!primeraVez && (
+          {primeraVez ? (
+            <BotonSalir />
+          ) : (
             <a href="#/perfil" className="boton-fantasma">
               Cancelar
             </a>

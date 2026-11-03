@@ -4,6 +4,8 @@ import { es } from 'date-fns/locale';
 import { hrefDe, useRutaActual } from '@/app/enrutador';
 import { rutasVisibles, type DefinicionRuta } from '@/app/rutas';
 import { usePerfil } from '@/estado/usePerfil';
+import { useSesion } from '@/estado/sesion';
+import { textoSincronizacion, textoSincronizacionCorto } from '@/sincronizacion/texto';
 import { SelectorPerfil } from './SelectorPerfil';
 import { useApp, temaEfectivo } from '@/estado/app';
 import { Icono } from './Icono';
@@ -115,6 +117,25 @@ function TarjetaConsejo() {
   );
 }
 
+function EstadoNube() {
+  const sincronizacion = useSesion((s) => s.sincronizacion);
+  const ok = sincronizacion.estado === 'inactivo' && sincronizacion.pendientes === 0;
+  return (
+    <a
+      href={hrefDe('/ajustes')}
+      className="mt-3 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-lateral-tinta hover:bg-lateral-tinta/10"
+    >
+      <span
+        aria-hidden="true"
+        className={`h-2 w-2 shrink-0 rounded-full ${ok ? 'bg-exito' : sincronizacion.estado === 'sincronizando' ? 'bg-lateral-tinta/50' : 'bg-peligro'}`}
+      />
+      <span className="min-w-0 truncate" title={textoSincronizacion(sincronizacion)}>
+        {textoSincronizacionCorto(sincronizacion)}
+      </span>
+    </a>
+  );
+}
+
 function BarraLateral() {
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-lateral p-5 lg:flex">
@@ -122,6 +143,7 @@ function BarraLateral() {
       <Navegacion />
       <div className="mt-auto">
         <TarjetaConsejo />
+        <EstadoNube />
       </div>
     </aside>
   );
@@ -169,6 +191,7 @@ function MenuMovil() {
         <Navegacion onNavegar={() => cerrar(false)} />
         <div className="mt-auto">
           <TarjetaConsejo />
+          <EstadoNube />
         </div>
       </div>
     </div>
