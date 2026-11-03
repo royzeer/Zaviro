@@ -100,6 +100,14 @@ export const RUTAS: DefinicionRuta[] = [
     grupo: 'nivel',
   },
   {
+    ruta: '/bitacora',
+    titulo: 'Bitácora',
+    descripcion: 'Avances de investigación, día a día.',
+    icono: 'bitacora',
+    modulos: ['bitacora'],
+    grupo: 'nivel',
+  },
+  {
     ruta: '/ajustes',
     titulo: 'Ajustes',
     descripcion: 'Tema, perfiles, respaldo y datos de ejemplo.',

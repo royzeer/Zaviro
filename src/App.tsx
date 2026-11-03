@@ -11,6 +11,11 @@ import { EnConstruccion } from '@/vistas/EnConstruccion';
 import { Errores } from '@/vistas/Errores';
 import { Repasar } from '@/vistas/Repasar';
 import { NotasPlan } from '@/vistas/NotasPlan';
+import { Saber11 } from '@/vistas/Saber11';
+import { SaberPro } from '@/vistas/SaberPro';
+import { TrabajoGrado } from '@/vistas/TrabajoGrado';
+import { Lecturas } from '@/vistas/Lecturas';
+import { Bitacora } from '@/vistas/Bitacora';
 import { recalcularDominios } from '@/db/operaciones';
 import { Inicio } from '@/vistas/Inicio';
 import { Materias } from '@/vistas/Materias';
@@ -84,6 +89,21 @@ export function App() {
       break;
     case '/apuntes':
       contenido = <Apuntes apunteId={parametro} />;
+      break;
+    case '/saber11':
+      contenido = <Saber11 />;
+      break;
+    case '/saber-pro':
+      contenido = <SaberPro />;
+      break;
+    case '/trabajo-grado':
+      contenido = <TrabajoGrado />;
+      break;
+    case '/lecturas':
+      contenido = <Lecturas lecturaId={parametro} />;
+      break;
+    case '/bitacora':
+      contenido = <Bitacora />;
       break;
     default:
       contenido = <EnConstruccion ruta={def} />;
