@@ -37,12 +37,15 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // mjs: el lector de PDF, para poder subir documentos sin conexión.
+        globPatterns: ['**/*.{js,mjs,css,html,svg,png,woff2}'],
         navigateFallback: 'index.html',
       },
     }),
   ],
   build: {
+    // El lector de PDF pesa algo más de 500 kB, pero solo se descarga al subir un documento.
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         // Librerías en archivos aparte: cambian poco y el navegador las conserva en caché.
