@@ -42,7 +42,7 @@ function EnlaceNav({
       className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
         activa
           ? 'bg-fondo text-tinta shadow-tarjeta'
-          : 'text-lateral-tinta/85 hover:bg-lateral-tinta/10 hover:text-lateral-tinta'
+          : 'text-lateral-tinta hover:bg-lateral-tinta/10 hover:text-lateral-tinta'
       }`}
     >
       <Icono nombre={r.icono} tamano={19} className={activa ? 'text-acento' : ''} />
@@ -63,7 +63,7 @@ function Navegacion({ onNavegar }: { onNavegar?: () => void }) {
       {grupos.map((g, i) => (
         <div key={i} className="flex flex-col gap-1">
           {g.titulo && (
-            <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-lateral-tinta/85">
+            <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-lateral-tinta">
               {g.titulo}
             </p>
           )}
@@ -86,7 +86,7 @@ function Marca() {
         <span className="block text-lg font-extrabold tracking-tight text-lateral-tinta">
           Zaviro
         </span>
-        <span className="block text-xs font-medium text-lateral-tinta/70">
+        <span className="block text-xs font-medium text-lateral-tinta">
           Tu espacio de estudio
         </span>
       </span>
@@ -101,7 +101,7 @@ function TarjetaConsejo() {
         <Icono nombre="bombilla" tamano={16} />
         Consejo del día
       </p>
-      <p className="text-[13px] leading-snug text-lateral-tinta/90">{consejoDelDia(new Date())}</p>
+      <p className="text-[13px] leading-snug text-lateral-tinta">{consejoDelDia(new Date())}</p>
     </div>
   );
 }
