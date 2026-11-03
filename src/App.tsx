@@ -9,6 +9,8 @@ import { Apuntes } from '@/vistas/Apuntes';
 import { Bienvenida } from '@/vistas/Bienvenida';
 import { EnConstruccion } from '@/vistas/EnConstruccion';
 import { Errores } from '@/vistas/Errores';
+import { Repasar } from '@/vistas/Repasar';
+import { recalcularDominios } from '@/db/operaciones';
 import { Inicio } from '@/vistas/Inicio';
 import { Materias } from '@/vistas/Materias';
 import { Perfil } from '@/vistas/Perfil';
@@ -27,6 +29,10 @@ function useTemaDelSistema() {
 
 export function App() {
   useTemaDelSistema();
+  useEffect(() => {
+    // El dominio baja con el tiempo sin repasar: se actualiza al abrir la app.
+    void recalcularDominios();
+  }, []);
   const ruta = useRutaActual();
   const { cargando, perfil, vocab } = usePerfil();
   const resuelta = resolverRuta(ruta);
@@ -65,6 +71,9 @@ export function App() {
       break;
     case '/materias':
       contenido = <Materias materiaId={parametro} />;
+      break;
+    case '/repasar':
+      contenido = <Repasar />;
       break;
     case '/errores':
       contenido = <Errores />;

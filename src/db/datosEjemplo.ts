@@ -2,7 +2,8 @@ import { addDays, subDays } from 'date-fns';
 import { db, type ZaviroDB } from './db';
 import type { Apunte, ConceptoRaiz, ErrorRegistrado, Materia, Tema } from './esquemas';
 import type { Nivel, TipoError } from '@/dominio/catalogo';
-import { crearPerfil, cortesIniciales, registrarError } from './operaciones';
+import { crearPerfil, cortesIniciales, recalcularDominios, registrarError } from './operaciones';
+import type { Calificacion } from '@/dominio/repaso';
 import { guardar, nuevoId } from './repositorio';
 import { modulosSugeridos, reglasSugeridas } from '@/dominio/niveles';
 
@@ -282,6 +283,48 @@ export async function cargarDatosEjemplo(base: ZaviroDB = db) {
   await fallo(programacion.id, 11, 'concepto', [logica], 6);
   await fallo(programacion.id, 10, 'procedimiento', [logica, despejes], 30, true);
 
+  // Tarjetas con historial de repasos, para que el dominio calculado de cada tema sea variado.
+  for (const [i, t] of temas.entries()) {
+    const historial: Calificacion[] =
+      t.dominio >= 0.6
+        ? ['bien', 'facil', 'facil']
+        : t.dominio >= 0.4
+          ? ['dificil', 'bien']
+          : ['olvide', 'dificil'];
+    const tarjetaId = nuevoId();
+    await guardar(
+      'tarjetas',
+      {
+        id: tarjetaId,
+        origenTipo: 'manual',
+        origenId: t.materiaId,
+        temaId: t.id,
+        frente: `Explica con tus palabras: ${t.titulo}`,
+        reverso: 'Compara con tus apuntes del tema.',
+        facilidad: 2.5,
+        intervalo: historial.length * 2,
+        repeticiones: historial.length,
+        proximoRepaso: iso(addDays(hoy, 1 + (i % 4))),
+        esEjemplo: true,
+      },
+      base,
+    );
+    for (const [j, calificacion] of historial.entries()) {
+      await guardar(
+        'repasos',
+        {
+          id: nuevoId(),
+          tarjetaId,
+          temaId: t.id,
+          fecha: iso(subDays(hoy, (historial.length - j) * 2)),
+          calificacion,
+          esEjemplo: true,
+        },
+        base,
+      );
+    }
+  }
+
   // Una tarjeta vencida para que se vea un tema "oxidado" en el árbol.
   await guardar(
     'tarjetas',
@@ -302,6 +345,7 @@ export async function cargarDatosEjemplo(base: ZaviroDB = db) {
     base,
   );
 
+  await recalcularDominios(hoy, base);
   return { perfiles: [tecnologo, pregrado], materias, temas, apuntes, conceptos, errores };
 }
 

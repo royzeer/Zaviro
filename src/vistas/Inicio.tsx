@@ -135,7 +135,7 @@ export function Inicio() {
         />
         <p className="mt-3 text-sm text-tinta-suave">
           {datos?.vencidas
-            ? `Tienes ${datos.vencidas} tarjetas para repasar hoy.`
+            ? `Tienes ${datos.vencidas} ${datos.vencidas === 1 ? 'tarjeta' : 'tarjetas'} para repasar hoy.`
             : 'No tienes repasos pendientes por ahora.'}
         </p>
       </Tarjeta>

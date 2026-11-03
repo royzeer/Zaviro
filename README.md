@@ -80,6 +80,13 @@ Se pueden tener varios perfiles a la vez (por ejemplo, un tecnólogo y una carre
 - El ranking de raíces cruza los errores de todas las materias y perfiles. Cada error pesa según su antigüedad (pierde la mitad cada 21 días) y si está resuelto (pesa 0,3). La lógica está en `src/dominio/raices.ts`.
 - El árbol vivo de la pantalla de inicio se calcula en `src/dominio/arbol.ts`: d3-hierarchy reparte materias y temas en la copa y d3-force acomoda las raíces bajo tierra, más profundas cuanto más bajo es su nivel de origen. El color de cada hoja muestra el dominio, las hojas con repasos vencidos se ven oxidadas y las raíces de los temas con errores recientes se iluminan.
 
+## Repaso espaciado y dominio
+
+- Las tarjetas se crean desde un apunte, desde un error (automáticamente si tiene enunciado y solución), desde una base de un nivel anterior o a mano.
+- El algoritmo es SM-2 con cuatro calificaciones (olvidé, difícil, bien, fácil). Los primeros intervalos salen de las reglas del perfil, así que bachillerato repasa más seguido y posgrado deja más espacio. Si olvidas una tarjeta vuelve a salir en 10 minutos, dentro de la misma sesión. Ver `src/dominio/repaso.ts`.
+- El dominio de cada tema (de 0 a 1) combina los aciertos en los repasos (los recientes pesan más), la caída por el tiempo sin repasar (más lenta si las tarjetas ya tienen intervalos largos) y los errores recientes sin resolver. Se recalcula después de cada repaso y al abrir la app. Ver `src/dominio/dominio.ts`.
+- En la pantalla Repasar se usa Espacio para ver la respuesta y las teclas 1 a 4 para calificar.
+
 ## Datos y privacidad
 
 Toda la información vive en IndexedDB del navegador. Nada se envía a ningún servidor. Los datos de ejemplo se marcan con `esEjemplo` y se pueden borrar desde Ajustes con el botón "Borrar datos de ejemplo", sin afectar los datos reales.
