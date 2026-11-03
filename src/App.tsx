@@ -12,6 +12,7 @@ import { Errores } from '@/vistas/Errores';
 import { Repasar } from '@/vistas/Repasar';
 import { NotasPlan } from '@/vistas/NotasPlan';
 import { Saber11 } from '@/vistas/Saber11';
+import { Ejemplos } from '@/vistas/Ejemplos';
 import { SaberPro } from '@/vistas/SaberPro';
 import { TrabajoGrado } from '@/vistas/TrabajoGrado';
 import { Lecturas } from '@/vistas/Lecturas';
@@ -89,6 +90,9 @@ export function App() {
       break;
     case '/apuntes':
       contenido = <Apuntes apunteId={parametro} />;
+      break;
+    case '/ejemplos':
+      contenido = <Ejemplos ejemploId={parametro} />;
       break;
     case '/saber11':
       contenido = <Saber11 />;
