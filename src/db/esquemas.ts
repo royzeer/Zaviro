@@ -214,7 +214,12 @@ export const simulacroSaber11Esquema = z.object({
   id,
   perfilId: id,
   fecha: fechaIso,
-  puntajes: z.record(z.enum(PRUEBAS_SABER11), z.number().min(0).max(100)),
+  puntajes: z.object(
+    Object.fromEntries(PRUEBAS_SABER11.map((p) => [p, z.number().min(0).max(100)])) as Record<
+      (typeof PRUEBAS_SABER11)[number],
+      z.ZodNumber
+    >,
+  ),
   puntajeGlobal: z.number().min(0).max(500),
   esEjemplo,
 });
