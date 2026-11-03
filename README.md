@@ -1,6 +1,6 @@
 # Zaviro
 
-Zaviro es un espacio personal para estudiar cualquier materia, adaptado al nivel académico del estudiante (desde bachillerato hasta doctorado, según la estructura de la educación en Colombia). No tiene red social, cuentas ni chat: todo se guarda en el dispositivo.
+Zaviro es un espacio personal para estudiar cualquier materia, adaptado al nivel académico del estudiante (desde bachillerato hasta doctorado, según la estructura de la educación en Colombia). No tiene red social ni chat. Cada estudiante crea su cuenta y sus datos se guardan en MySQL, con una copia en el navegador para que la app funcione sin internet.
 
 La app es inteligente por lógica propia, no por IA. Cruza los errores de todas las materias para encontrar las raíces compartidas (por ejemplo, despejes o comprensión lectora), decide cuándo repasar con repetición espaciada y señala dónde una hora de estudio da más puntos.
 
@@ -16,6 +16,8 @@ La app es inteligente por lógica propia, no por IA. Cruza los errores de todas 
 | 5    | Módulos por nivel: Saber 11, Trabajo de grado, Lecturas, Saber Pro / TyT            | Lista  |
 | 6    | Ejemplos resueltos por área con diagrama de cuerpo libre                            | Lista  |
 | 7    | Respaldo JSON, PWA y pulido                                                         | Lista  |
+| 8    | Cuentas de usuario con MySQL y sincronización entre dispositivos                    | Lista  |
+| 9    | Subir PDF o Word y armar temas, apuntes, tarjetas y plan de forma automática        | Lista  |
 
 ## Requisitos
 
@@ -23,6 +25,8 @@ La app es inteligente por lógica propia, no por IA. Cruza los errores de todas 
 - npm 10 o superior
 
 ## Uso
+
+La app (carpeta raíz) y la API (carpeta `backend/`) se instalan por separado.
 
 ```bash
 npm install
@@ -34,28 +38,48 @@ npm run preview    # sirve la compilación de producción
 npm run format     # formatea el código con Prettier
 ```
 
+Para la API se necesita MySQL 8 (o MariaDB 10.6+) en ejecución:
+
+```bash
+cd backend
+cp .env.example .env   # completa la conexión a MySQL y JWT_SECRET
+npm install
+npm run db:init        # crea la base y las tablas de database/schema.sql (no borra nada)
+npm run dev            # API en http://localhost:4000/api
+npm test               # pruebas con una base aparte llamada zaviro_pruebas
+npm run build          # compila TypeScript a dist/
+```
+
+La app busca la API en `VITE_API_URL`; si no está definida usa `http://localhost:4000/api`.
+
 ## Tecnología
 
 - React 18, TypeScript y Vite
 - Tailwind CSS con tokens de color propios (modo claro y oscuro)
 - Zustand para el estado de la interfaz
-- Dexie sobre IndexedDB para guardar todo en el dispositivo (local-first, sin backend)
+- Dexie sobre IndexedDB como copia local, para que la app abra rápido y funcione sin internet
 - Zod para validar cada registro antes de guardarlo o importarlo
 - date-fns para fechas
 - d3-hierarchy y d3-force para el árbol en SVG
 - Vitest para pruebas
 - vite-plugin-pwa para instalarla y usarla sin internet
+- pdf.js y mammoth para leer PDF y Word en el navegador
+- API: Node.js, Express 5, TypeScript, MySQL (mysql2), bcrypt para las contraseñas y JWT para las sesiones, con el mismo esquema que Kuadri
 
 ## Estructura
 
 ```
+backend/        API REST: cuentas, sesiones y sincronización (Express + MySQL)
+database/       esquema MySQL
 src/
-  app/          rutas y enrutador por hash (#/materias), funciona sin servidor
+  app/          rutas y enrutador por hash (#/materias)
   config/       valores externos que hay que verificar (pesos del Saber 11)
   componentes/  marco de la app (barra lateral, encabezado, navegación móvil), tarjetas e íconos
   db/           base de datos Dexie, esquemas Zod, repositorio y consultas en vivo
+  documentos/   lectura de PDF, Word y texto en el navegador
   dominio/      catálogo de niveles, áreas, módulos y la lógica de estudio (con pruebas)
-  estado/       estado global de la interfaz (tema, menú)
+  estado/       estado global (tema, menú, sesión, documento por subir)
+  sincronizacion/ cliente de la API y sincronización entre IndexedDB y la cuenta
   styles/       estilos globales y tokens de diseño
   vistas/       pantallas de la app
 ```
@@ -112,15 +136,46 @@ Se pueden tener varios perfiles a la vez (por ejemplo, un tecnólogo y una carre
 - Los de mecánica muestran el diagrama de cuerpo libre en SVG: cada fuerza como flecha desde el centro, con un color por tipo (peso, normal, fricción, tensión, aplicada), largo proporcional a su magnitud y una tabla con sus componentes. Ver `src/dominio/fuerzas.ts` y `src/componentes/DiagramaCuerpoLibre.tsx`.
 - Mis ejemplos: guarda una copia de la biblioteca en un tema o escribe los tuyos con pasos, comprobación y, si quieres, las fuerzas del diagrama (se muestra la suma de fuerzas mientras las escribes).
 
+## Subir apuntes en PDF o Word
+
+En Apuntes, en Inicio o en el plan de estudio está el botón "Subir PDF o Word" (también se puede soltar el archivo encima). El archivo se lee en el navegador y no se sube: solo se guardan los apuntes que salen de él. Acepta PDF con texto, Word (.docx), .txt y .md.
+
+- Títulos: en Word se usan los estilos de título (o los párrafos cortos en negrita si no hay estilos). En PDF se reconocen por el tamaño de la letra frente al del cuerpo, por la numeración ("2.1", "Capítulo 3", "IV.") o porque están en mayúsculas. Se quitan los encabezados y números de página que se repiten.
+- Secciones: cada título del nivel más alto que se repite es un tema; los subtítulos quedan dentro del apunte. Si el documento no tiene títulos, se parte en trozos de unas 700 palabras con sus palabras clave como nombre.
+- Pesos: cada tema pesa según lo largo de su sección (suman 100 y ninguno baja de 5).
+- Fecha del examen: se busca una fecha cerca de palabras como parcial, examen, quiz o entrega ("el parcial es el 20 de noviembre", "Examen final: 10/12/2026"). Se puede corregir antes de guardar.
+- Tarjetas: las definiciones del texto ("Término: explicación" o "La aceleración es…") se vuelven tarjetas de repaso.
+- Si la materia ya tiene un tema con el mismo nombre, se reutiliza.
+
+Con eso no hay que armar el plan a mano: los temas entran solos al plan de estudio con sus horas estimadas, y la fecha del examen ordena las prioridades. Los PDF escaneados (solo imagen) no tienen texto y la app avisa. Ver `src/dominio/documentos.ts`, `src/documentos/leer.ts` y `src/db/importarDocumento.ts`.
+
+## Cuentas y sincronización
+
+- Registro con nombre, correo y contraseña (mínimo 8 caracteres), cifrada con bcrypt. La sesión es un token JWT que dura 30 días. Hay límite de intentos para dificultar que adivinen contraseñas.
+- Desde Ajustes se puede cambiar la contraseña, cerrar la sesión o borrar la cuenta con todos sus datos.
+- Cada registro de la app (perfil, materia, apunte, tarjeta…) se guarda en la tabla `registros` de MySQL como JSON, con un número de revisión por usuario. La app anota cada cambio local, lo sube pocos segundos después y trae lo que cambió en otros dispositivos. Si no hay internet, los cambios esperan y se suben al volver la conexión. Si dos dispositivos cambian el mismo registro, gana el último en llegar al servidor.
+- Si abres la app con datos creados antes de tener cuenta, al entrar se suben a tu cuenta. Si entra otra persona en el mismo navegador, los datos de la anterior se quitan del navegador (siguen en su cuenta).
+- La barra lateral muestra si todo está guardado o cuántos cambios faltan por subir. Ver `src/sincronizacion/` y `backend/src/services/`.
+
+## Publicar en internet
+
+Igual que Kuadri: la app en Vercel, la API en Render y MySQL en Aiven (todos con plan gratuito).
+
+1. Base de datos en Aiven: crea un servicio MySQL y copia host, puerto, usuario, contraseña y el certificado CA. En tu computador, dentro de `backend/`, pon esos datos en `.env` con `DB_SSL=true` y `DB_CA_CERT` (el certificado en una sola línea, con `\n` en los saltos), y corre `npm run db:init`.
+2. API en Render: crea un Web Service desde este repositorio con Root Directory `backend`, Build Command `npm ci --include=dev && npm run build` y Start Command `npm start`. En Environment agrega `NODE_ENV=production`, `JWT_SECRET` (una frase larga y aleatoria), `FRONTEND_URL` (la dirección de Vercel, por ejemplo `https://zaviro.vercel.app`) y las variables `DB_*` de Aiven. Al terminar, `https://<tu-servicio>.onrender.com/api/salud` debe responder.
+3. App en Vercel: en Settings, Environment Variables, agrega `VITE_API_URL=https://<tu-servicio>.onrender.com/api` y vuelve a desplegar.
+
+El plan gratuito de Render se duerme cuando no se usa: la primera vez que se entra puede tardar hasta un minuto, y la pantalla de acceso lo avisa.
+
 ## Datos y privacidad
 
-Toda la información vive en IndexedDB del navegador. Nada se envía a ningún servidor. Los datos de ejemplo se marcan con `esEjemplo` y se pueden borrar desde Ajustes con el botón "Borrar datos de ejemplo", sin afectar los datos reales.
+Los datos de cada estudiante están en su cuenta y solo se pueden leer con su sesión. El navegador guarda una copia en IndexedDB para funcionar sin internet; al cerrar la sesión esa copia se borra. Los documentos que se suben no salen del navegador: solo se guardan los apuntes que salen de ellos. Los datos de ejemplo se marcan con `esEjemplo` y se pueden borrar desde Ajustes con el botón "Borrar datos de ejemplo", sin afectar los datos reales.
 
 ### Respaldo
 
-- En Ajustes, "Descargar respaldo" guarda un archivo `zaviro-respaldo-AAAA-MM-DD.json` con todas las tablas y los ajustes. La app recuerda la fecha del último respaldo.
+- Además de la cuenta, en Ajustes "Descargar respaldo" guarda un archivo `zaviro-respaldo-AAAA-MM-DD.json` con todas las tablas y los ajustes. La app recuerda la fecha del último respaldo.
 - "Importar respaldo" valida cada registro con los mismos esquemas Zod de la app. Si algún registro no es válido, no se importa nada y se muestra cuál falla y por qué. Se puede combinar con lo que ya hay (gana el registro del respaldo si el id coincide) o reemplazar todo.
-- En la pantalla de bienvenida también se puede restaurar un respaldo, para pasar los datos a un equipo nuevo.
+- En la pantalla de bienvenida también se puede restaurar un respaldo, por ejemplo uno descargado antes de tener cuenta.
 - Ajustes permite pedir almacenamiento persistente para que el navegador no borre los datos cuando le falta espacio. Ver `src/db/respaldo.ts`.
 
 ### Instalación y uso sin internet
