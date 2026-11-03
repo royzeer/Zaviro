@@ -59,6 +59,20 @@ src/
   vistas/       pantallas de la app
 ```
 
+## Perfiles y niveles
+
+Al abrir la app por primera vez, un asistente pide el nivel (bachillerato, técnico profesional, tecnólogo, profesional universitario, especialización, maestría o doctorado), el área y la institución, y propone reglas sugeridas para ese nivel. Todas son editables porque cambian entre instituciones:
+
+- Escala de notas (mínima, máxima, aprobatoria y decimales).
+- En bachillerato, la equivalencia con la escala nacional (Superior, Alto, Básico y Bajo). Los rangos se dejan vacíos para que el estudiante escriba los de su colegio.
+- Períodos, cortes, evidencias o hitos, con su peso.
+- Créditos académicos (48 horas por crédito y la proporción entre horas con docente y trabajo independiente).
+- Nota mínima por materia, promedio ponderado por créditos y promedio acumulado mínimo.
+- Intervalos iniciales del repaso espaciado.
+- Módulos activos.
+
+Se pueden tener varios perfiles a la vez (por ejemplo, un tecnólogo y una carrera universitaria) y cambiar entre ellos desde el encabezado. Cambiar el nivel de un perfil no borra datos. Las reglas sugeridas están en `src/dominio/niveles.ts`.
+
 ## Datos y privacidad
 
 Toda la información vive en IndexedDB del navegador. Nada se envía a ningún servidor. Los datos de ejemplo se marcan con `esEjemplo` y se pueden borrar desde Ajustes con el botón "Borrar datos de ejemplo", sin afectar los datos reales.

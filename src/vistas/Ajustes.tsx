@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { cargarDatosEjemplo, hayDatosEjemplo } from '@/db/datosEjemplo';
 import { borrarDatosEjemplo } from '@/db/repositorio';
+import { useConsulta } from '@/db/useConsulta';
 import { useApp, type PreferenciaTema } from '@/estado/app';
 import { Icono } from '@/componentes/Icono';
 import { Tarjeta } from '@/componentes/Tarjeta';
@@ -14,6 +16,12 @@ export function Ajustes() {
   const tema = useApp((s) => s.tema);
   const setTema = useApp((s) => s.setTema);
   const [mensaje, setMensaje] = useState('');
+  const hayEjemplo = useConsulta(() => hayDatosEjemplo());
+
+  async function cargarEjemplos() {
+    await cargarDatosEjemplo();
+    setMensaje('Se cargaron dos perfiles de ejemplo: un tecnólogo y una ingeniería en paralelo.');
+  }
 
   async function borrarEjemplos() {
     const n = await borrarDatosEjemplo();
@@ -55,10 +63,19 @@ export function Ajustes() {
           Todo lo que guardas vive solo en este dispositivo. Los datos de ejemplo sirven para probar
           la app y puedes quitarlos cuando quieras sin tocar tus datos reales.
         </p>
-        <button className="boton-secundario" onClick={borrarEjemplos}>
-          <Icono nombre="papelera" tamano={16} />
-          Borrar datos de ejemplo
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {hayEjemplo ? (
+            <button className="boton-secundario" onClick={borrarEjemplos}>
+              <Icono nombre="papelera" tamano={16} />
+              Borrar datos de ejemplo
+            </button>
+          ) : (
+            <button className="boton-secundario" onClick={cargarEjemplos}>
+              <Icono nombre="mas" tamano={16} />
+              Cargar datos de ejemplo
+            </button>
+          )}
+        </div>
         <p className="mt-3 min-h-5 text-sm text-tinta-suave" role="status">
           {mensaje}
         </p>
