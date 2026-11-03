@@ -107,3 +107,46 @@ export const PRUEBAS_SABER11 = [
   'ingles',
 ] as const;
 export type PruebaSaber11 = (typeof PRUEBAS_SABER11)[number];
+
+export const ESTADOS_EVIDENCIA = ['pendiente', 'enRevision', 'aprobada', 'porMejorar'] as const;
+export type EstadoEvidencia = (typeof ESTADOS_EVIDENCIA)[number];
+
+export const NOMBRE_ESTADO_EVIDENCIA: Record<EstadoEvidencia, string> = {
+  pendiente: 'Pendiente',
+  enRevision: 'En revisión',
+  aprobada: 'Aprobada',
+  porMejorar: 'Por mejorar',
+};
+
+export const ESTADOS_MATERIA = ['cursando', 'aprobada', 'reprobada', 'pendiente'] as const;
+export type EstadoMateria = (typeof ESTADOS_MATERIA)[number];
+
+export const NOMBRE_ESTADO_MATERIA: Record<EstadoMateria, string> = {
+  cursando: 'Cursando',
+  aprobada: 'Aprobada',
+  reprobada: 'Reprobada',
+  pendiente: 'Por cursar',
+};
+
+export const NOMBRE_TIPO_MATERIA: Record<TipoMateria, string> = {
+  cuantitativa: 'Cuantitativa',
+  teorica: 'Teórica',
+  laboratorio: 'Laboratorio',
+  programacion: 'Programación',
+};
+
+export const NOMBRE_MODULO: Record<Modulo, string> = {
+  materias: 'Materias y temas',
+  apuntes: 'Apuntes',
+  errores: 'Errores',
+  arbol: 'Árbol de raíces',
+  repaso: 'Repaso espaciado',
+  notas: 'Notas',
+  plan: 'Plan de estudio',
+  ejemplos: 'Ejemplos resueltos',
+  saber11: 'Preparación Saber 11',
+  saberPro: 'Preparación Saber Pro / TyT',
+  trabajoGrado: 'Trabajo de grado',
+  lecturas: 'Lecturas y citas',
+  bitacora: 'Bitácora de avances',
+};

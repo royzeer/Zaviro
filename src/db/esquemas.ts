@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import {
   AREAS,
+  ESTADOS_EVIDENCIA,
   ESTADOS_HITO,
+  ESTADOS_MATERIA,
   ESTADOS_LECTURA,
   MODULOS,
   NIVELES,
@@ -41,8 +43,9 @@ export const escalaEsquema = z
 /** Categorías de desempeño (por ejemplo Superior, Alto, Básico, Bajo). Los rangos los define la institución. */
 export const categoriaDesempenoEsquema = z.object({
   nombre: z.string().min(1),
-  desde: nota,
-  hasta: nota,
+  /** null mientras el estudiante no haya ingresado el rango que fija su colegio. */
+  desde: nota.nullable(),
+  hasta: nota.nullable(),
 });
 
 export const componenteEvaluacionEsquema = z.object({
@@ -83,6 +86,8 @@ export const perfilEsquema = z.object({
   programa: z.string().optional(),
   reglas: reglasEsquema,
   modulosActivos: z.array(moduloEsquema),
+  /** Total de créditos del programa (para seguir el avance en pregrado). */
+  creditosPrograma: z.number().int().min(0).optional(),
   creadoEn: fechaIso,
   esEjemplo,
 });
@@ -92,6 +97,8 @@ export const corteMateriaEsquema = z.object({
   peso: z.number().min(0).max(100),
   nota: nota.optional(),
   fecha: fechaIso.optional(),
+  /** Para evidencias o actividades (técnico y tecnólogo). */
+  estado: z.enum(ESTADOS_EVIDENCIA).optional(),
 });
 
 export const materiaEsquema = z.object({
@@ -105,6 +112,9 @@ export const materiaEsquema = z.object({
   cortes: z.array(corteMateriaEsquema),
   prerrequisitos: z.array(id).optional(),
   periodoAcademico: z.string().optional(),
+  estado: z.enum(ESTADOS_MATERIA).optional(),
+  /** Nota final registrada a mano cuando la materia ya terminó (para el promedio acumulado). */
+  notaFinal: nota.optional(),
   esEjemplo,
 });
 

@@ -86,9 +86,7 @@ function Marca() {
         <span className="block text-lg font-extrabold tracking-tight text-lateral-tinta">
           Zaviro
         </span>
-        <span className="block text-xs font-medium text-lateral-tinta">
-          Tu espacio de estudio
-        </span>
+        <span className="block text-xs font-medium text-lateral-tinta">Tu espacio de estudio</span>
       </span>
     </a>
   );
