@@ -1,4 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
+import { avisarCambioLocal } from '@/sincronizacion/avisos';
+import { rastrearCambios } from '@/sincronizacion/rastreo';
 import type {
   Ajuste,
   Apunte,
@@ -20,7 +22,8 @@ import type {
 } from './esquemas';
 
 /**
- * Base de datos local (IndexedDB). Nada sale del dispositivo.
+ * Base de datos local (IndexedDB). Funciona sin conexión; con una cuenta abierta,
+ * cada cambio se anota y se sincroniza con el servidor (ver src/sincronizacion).
  * Nota: IndexedDB no indexa booleanos, por eso campos como `resuelto`
  * o `esEjemplo` se filtran en memoria y no aparecen en los índices.
  */
@@ -99,3 +102,6 @@ export const TABLAS_DATOS = [
 ] as const;
 
 export type TablaDatos = (typeof TABLAS_DATOS)[number];
+
+// Todo cambio en la base principal queda anotado para subirlo a la cuenta.
+rastrearCambios(db, [...TABLAS_DATOS, 'ajustes'], avisarCambioLocal);
