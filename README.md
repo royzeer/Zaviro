@@ -12,7 +12,7 @@ La app es inteligente por lógica propia, no por IA. Cruza los errores de todas 
 | 1    | Perfiles académicos y reglas por nivel, materias, cortes, créditos, temas y apuntes | Pendiente |
 | 2    | Registro de errores, conceptos raíz y árbol vivo                                    | Pendiente |
 | 3    | Repetición espaciada y pantalla de repaso                                           | Pendiente |
-| 4    | Calculadora de notas, promedio ponderado, rendimiento de estudio y plan             | Pendiente |
+| 4    | Calculadora de notas, promedio ponderado, rendimiento de estudio y plan             | Lista     |
 | 5    | Módulos por nivel: Saber 11, Trabajo de grado, Lecturas, Saber Pro / TyT            | Pendiente |
 | 6    | Ejemplos resueltos por área con diagrama de cuerpo libre                            | Pendiente |
 | 7    | Respaldo JSON, PWA y pulido                                                         | Pendiente |
@@ -86,6 +86,14 @@ Se pueden tener varios perfiles a la vez (por ejemplo, un tecnólogo y una carre
 - El algoritmo es SM-2 con cuatro calificaciones (olvidé, difícil, bien, fácil). Los primeros intervalos salen de las reglas del perfil, así que bachillerato repasa más seguido y posgrado deja más espacio. Si olvidas una tarjeta vuelve a salir en 10 minutos, dentro de la misma sesión. Ver `src/dominio/repaso.ts`.
 - El dominio de cada tema (de 0 a 1) combina los aciertos en los repasos (los recientes pesan más), la caída por el tiempo sin repasar (más lenta si las tarjetas ya tienen intervalos largos) y los errores recientes sin resolver. Se recalcula después de cada repaso y al abrir la app. Ver `src/dominio/dominio.ts`.
 - En la pantalla Repasar se usa Espacio para ver la respuesta y las teclas 1 a 4 para calificar.
+
+## Notas, promedio y plan
+
+- La calculadora usa la escala y la nota aprobatoria del perfil. Con las notas de los cortes ya calificados dice cuánto necesitas en promedio en lo que falta para aprobar o para tu meta, y si ya es imposible o ya está asegurado. Ver `src/dominio/notas.ts`.
+- El promedio puede ser simple o ponderado por créditos, según las reglas del perfil. Se muestran el semestral, el acumulado (solo materias con nota final) y el proyectado (si terminas como vas). Si el perfil tiene un promedio mínimo, también cuánto necesitas para mantenerlo.
+- Rendimiento de estudio: puntos ganables por hora = peso del tema en el examen × (1 − dominio) ÷ horas estimadas. Con créditos, las horas salen de créditos × horas por crédito × trabajo independiente × peso del corte × peso del tema; sin créditos se usa una estimación por peso. Ver `src/dominio/rendimiento.ts`.
+- El plan reparte las horas de cada tema entre hoy y su examen. Reserva primero el tiempo de los repasos y luego asigna bloques por rendimiento, subiendo las materias apretadas (lo que les falta frente a las horas que quedarían antes del examen). Avisa si las horas no alcanzan. Las horas por día y los días sin estudio se guardan por perfil. Ver `src/dominio/plan.ts`.
+- Al marcar un bloque como hecho se guarda una sesión de estudio; el plan descuenta esas horas y se recalcula solo si te atrasas.
 
 ## Datos y privacidad
 
