@@ -4,6 +4,9 @@ import { resolverRuta } from '@/app/rutas';
 import { Marco } from '@/componentes/Marco';
 import { aplicarTema, useApp } from '@/estado/app';
 import { usePerfil } from '@/estado/usePerfil';
+import { useSesion } from '@/estado/sesion';
+import { useSincronizacionAutomatica } from '@/sincronizacion/useSincronizacionAutomatica';
+import { Acceso } from '@/vistas/Acceso';
 import { Apuntes } from '@/vistas/Apuntes';
 import { Bienvenida } from '@/vistas/Bienvenida';
 import { EnConstruccion } from '@/vistas/EnConstruccion';
@@ -48,6 +51,23 @@ function useTemaDelSistema() {
 
 export function App() {
   useTemaDelSistema();
+  useSincronizacionAutomatica();
+  const usuario = useSesion((s) => s.usuario);
+  const preparando = useSesion((s) => s.preparando);
+  if (!usuario) return <Acceso />;
+  if (preparando) {
+    return (
+      <div className="grid min-h-dvh place-items-center bg-fondo px-4">
+        <p role="status" className="text-sm font-semibold text-tinta-suave">
+          Trayendo tus datos de estudio…
+        </p>
+      </div>
+    );
+  }
+  return <AppConSesion />;
+}
+
+function AppConSesion() {
   useEffect(() => {
     // El dominio baja con el tiempo sin repasar: se actualiza al abrir la app.
     void recalcularDominios();

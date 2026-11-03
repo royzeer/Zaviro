@@ -29,6 +29,9 @@ const TRAZOS = {
   bombilla:
     'M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z',
   papelera: 'M4.5 7h15M10 11v6M14 11v6M6.5 7l1 13h9l1-13M9.5 7V4h5v3',
+  nube: 'M7 18.5h10.5a3.5 3.5 0 0 0 .4-7A5.5 5.5 0 0 0 7.3 9.6 4.5 4.5 0 0 0 7 18.5z',
+  salir: 'M14 4.5h4.5v15H14M10 8l-4 4 4 4M6 12h9',
+  documento: 'M7 3.5h7l4 4V20.5H7zM14 3.5v4h4M9.5 12h5M9.5 15.5h5',
 } as const;
 
 export type NombreIcono = keyof typeof TRAZOS;
