@@ -73,6 +73,13 @@ Al abrir la app por primera vez, un asistente pide el nivel (bachillerato, técn
 
 Se pueden tener varios perfiles a la vez (por ejemplo, un tecnólogo y una carrera universitaria) y cambiar entre ellos desde el encabezado. Cambiar el nivel de un perfil no borra datos. Las reglas sugeridas están en `src/dominio/niveles.ts`.
 
+## Errores, raíces y árbol vivo
+
+- Registro rápido: materia, tema y tipo de error con un toque cada uno; la raíz y los detalles son opcionales.
+- Cada concepto raíz tiene un nivel de origen. Si un error de un nivel superior apunta a una raíz de un nivel anterior, Zaviro la marca como "base pendiente de un nivel anterior" y propone un repaso corto.
+- El ranking de raíces cruza los errores de todas las materias y perfiles. Cada error pesa según su antigüedad (pierde la mitad cada 21 días) y si está resuelto (pesa 0,3). La lógica está en `src/dominio/raices.ts`.
+- El árbol vivo de la pantalla de inicio se calcula en `src/dominio/arbol.ts`: d3-hierarchy reparte materias y temas en la copa y d3-force acomoda las raíces bajo tierra, más profundas cuanto más bajo es su nivel de origen. El color de cada hoja muestra el dominio, las hojas con repasos vencidos se ven oxidadas y las raíces de los temas con errores recientes se iluminan.
+
 ## Datos y privacidad
 
 Toda la información vive en IndexedDB del navegador. Nada se envía a ningún servidor. Los datos de ejemplo se marcan con `esEjemplo` y se pueden borrar desde Ajustes con el botón "Borrar datos de ejemplo", sin afectar los datos reales.

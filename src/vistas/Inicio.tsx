@@ -5,6 +5,12 @@ import { usePerfil } from '@/estado/usePerfil';
 import { distanciaDias, fechaCorta } from '@/utilidades/fechas';
 import { resumenMarkdown } from '@/utilidades/markdown';
 import { startOfDay } from 'date-fns';
+import { useMemo } from 'react';
+import type { Nivel } from '@/dominio/catalogo';
+import { NOMBRE_NIVEL } from '@/dominio/catalogo';
+import { puntuarRaices, temasQueFallan } from '@/dominio/raices';
+import type { EntradaArbol } from '@/dominio/arbol';
+import { ArbolVivo } from '@/componentes/ArbolVivo';
 import { hrefDe } from '@/app/enrutador';
 import { EstadoVacio, Tarjeta } from '@/componentes/Tarjeta';
 import { ArbolMuestra } from './ArbolMuestra';
@@ -38,14 +44,36 @@ export function Inicio() {
     const ids = materias.map((m) => m.id);
     const temas = await temasDeMaterias(ids);
     const temaIds = new Set(temas.map((t) => t.id));
-    const raices = await db.conceptosRaiz
-      .filter((r) => r.temaIds.some((t) => temaIds.has(t)))
-      .count();
+    const conceptos = await db.conceptosRaiz.toArray();
+    const raices = conceptos.filter((r) => r.temaIds.some((t) => temaIds.has(t))).length;
     const tarjetas = await db.tarjetas
       .filter((t) => t.temaId !== undefined && temaIds.has(t.temaId))
-      .count();
+      .toArray();
+    const ahora = new Date().toISOString();
+    const vencidas = tarjetas.filter((t) => t.proximoRepaso <= ahora);
     const apuntes = (await apuntesDeMaterias(ids)).slice(0, 3);
-    return { materias, temas, raices, tarjetas, apuntes };
+    const errores = await db.errores.toArray();
+    const perfiles = await db.perfiles.toArray();
+    const todasMaterias = await db.materias.toArray();
+    const nivelPerfil = new Map(perfiles.map((p) => [p.id, p.nivel]));
+    const nivelPorMateria = new Map<string, Nivel>();
+    for (const m of todasMaterias) {
+      const n = nivelPerfil.get(m.perfilId);
+      if (n) nivelPorMateria.set(m.id, n);
+    }
+    const ranking = puntuarRaices({ conceptos, errores, nivelPorMateria }).slice(0, 3);
+    return {
+      materias,
+      temas,
+      raices,
+      tarjetas: tarjetas.length,
+      vencidas: vencidas.length,
+      oxidados: new Set(vencidas.map((t) => t.temaId!)),
+      fallan: temasQueFallan(errores.filter((e) => ids.includes(e.materiaId))),
+      conceptos,
+      ranking,
+      apuntes,
+    };
   }, [perfil?.id]);
   const hoy = startOfDay(new Date()).toISOString();
   const proximos = (datos?.materias ?? [])
@@ -53,59 +81,99 @@ export function Inicio() {
     .sort((a, b) => a.fechaParcial!.localeCompare(b.fechaParcial!))
     .slice(0, 3);
   const nombreMateria = new Map((datos?.materias ?? []).map((m) => [m.id, m]));
+  const entrada = useMemo<EntradaArbol | null>(
+    () =>
+      perfil && datos
+        ? {
+            nivelPerfil: perfil.nivel,
+            materias: datos.materias,
+            temas: datos.temas,
+            conceptos: datos.conceptos,
+          }
+        : null,
+    [perfil, datos],
+  );
 
   return (
     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
       <Tarjeta titulo="Tu árbol de estudio" icono="raiz" className="md:col-span-2">
-        <div className="grid items-center gap-4 sm:grid-cols-[1.2fr_1fr]">
-          <div className="aspect-[41/29] w-full rounded-xl bg-superficie-2/60 p-2">
-            <ArbolMuestra />
-          </div>
-          <div className="flex flex-col gap-3">
-            <p className="text-sm text-tinta-suave">
-              Las hojas son tus temas y las raíces los conceptos base que comparten. El color
-              muestra cuánto dominas cada tema; si una raíz se ilumina, de ahí vienen tus fallos.
-            </p>
-            <ul className="flex flex-col gap-2 text-sm">
-              <li className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-exito" /> Dominado
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-oxido" /> Toca repasar
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-brillo" /> Raíz responsable de fallos
-              </li>
-            </ul>
-            <div className="grid grid-cols-3 gap-2">
-              <Dato etiqueta={vocab.materias} valor={datos?.materias.length ?? 0} />
-              <Dato etiqueta="Temas" valor={datos?.temas.length ?? 0} />
-              <Dato etiqueta="Raíces" valor={datos?.raices ?? 0} />
+        {entrada && datos && datos.temas.length > 0 ? (
+          <ArbolVivo entrada={entrada} fallan={datos.fallan} oxidados={datos.oxidados} />
+        ) : (
+          <div className="grid items-center gap-4 sm:grid-cols-[1.2fr_1fr]">
+            <div className="aspect-[41/29] w-full rounded-xl bg-superficie-2/60 p-2">
+              <ArbolMuestra />
+            </div>
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-tinta-suave">
+                Las hojas son tus temas y las raíces los conceptos base que comparten. El color
+                muestra cuánto dominas cada tema; si una raíz se ilumina, de ahí vienen tus fallos.
+              </p>
+              <a href={hrefDe('/materias')} className="boton-primario self-start">
+                Agregar temas
+              </a>
+              <div className="grid grid-cols-3 gap-2">
+                <Dato etiqueta={vocab.materias} valor={datos?.materias.length ?? 0} />
+                <Dato etiqueta="Temas" valor={datos?.temas.length ?? 0} />
+                <Dato etiqueta="Raíces" valor={datos?.raices ?? 0} />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </Tarjeta>
 
       <Tarjeta titulo="Repasos de hoy" icono="repasar" verTodo="/repasar">
         <div className="mb-3 flex items-baseline justify-between">
-          <p className="text-3xl font-extrabold tabular-nums">0</p>
+          <p className="text-3xl font-extrabold tabular-nums">{datos?.vencidas ?? 0}</p>
           <p className="text-xs font-semibold text-tinta-suave">
             {datos?.tarjetas ?? 0} tarjetas en total
           </p>
         </div>
-        <Barra valor={0} total={datos?.tarjetas ?? 0} />
-        <p className="mt-3 text-sm text-tinta-suave">No tienes repasos pendientes por ahora.</p>
+        <Barra
+          valor={(datos?.tarjetas ?? 0) - (datos?.vencidas ?? 0)}
+          total={datos?.tarjetas ?? 0}
+        />
+        <p className="mt-3 text-sm text-tinta-suave">
+          {datos?.vencidas
+            ? `Tienes ${datos.vencidas} tarjetas para repasar hoy.`
+            : 'No tienes repasos pendientes por ahora.'}
+        </p>
       </Tarjeta>
 
       <Tarjeta titulo="Raíces que más fallan" icono="errores" verTodo="/errores">
-        <EstadoVacio
-          texto="Cuando registres errores, aquí verás los conceptos base que más se repiten entre tus materias."
-          accion={
-            <a href={hrefDe('/errores')} className="boton-secundario">
-              Registrar un error
-            </a>
-          }
-        />
+        {(datos?.ranking.length ?? 0) === 0 ? (
+          <EstadoVacio
+            texto="Cuando registres errores, aquí verás los conceptos base que más se repiten entre tus materias."
+            accion={
+              <a href={hrefDe('/errores')} className="boton-secundario">
+                Registrar un error
+              </a>
+            }
+          />
+        ) : (
+          <ol className="flex flex-col gap-2">
+            {datos!.ranking.map((r, i) => (
+              <li
+                key={r.concepto.id}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${r.basePendiente ? 'bg-brillo/15' : 'bg-superficie-2/70'}`}
+              >
+                <span className="text-sm font-extrabold tabular-nums text-tinta-suave">
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold">{r.concepto.nombre}</span>
+                  <span className="block text-xs text-tinta-suave">
+                    {r.noResueltos} sin resolver · {r.materiaIds.length}{' '}
+                    {r.materiaIds.length === 1 ? 'materia' : 'materias'}
+                    {r.basePendiente
+                      ? ` · base de ${NOMBRE_NIVEL[r.concepto.nivelOrigen].toLowerCase()}`
+                      : ''}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
       </Tarjeta>
 
       <Tarjeta titulo={`Próximo ${vocab.parcial}`} icono="calendario" verTodo="/materias">

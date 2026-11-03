@@ -22,7 +22,7 @@ export interface Medidas {
   suelo: number;
 }
 
-export const MEDIDAS: Medidas = { ancho: 800, alto: 580, suelo: 330 };
+export const MEDIDAS: Medidas = { ancho: 640, alto: 540, suelo: 300 };
 
 export interface HojaArbol {
   id: string;
@@ -51,6 +51,8 @@ export interface RaizArbol {
   /** Cuántos niveles por debajo del perfil está su origen (0 = mismo nivel). */
   profundidad: number;
   temaIds: string[];
+  /** Si la etiqueta va arriba del nodo para no chocar con la vecina. */
+  etiquetaArriba: boolean;
 }
 
 export interface FormaArbol {
@@ -155,14 +157,14 @@ export function calcularArbol(entrada: EntradaArbol, medidas: Medidas = MEDIDAS)
     tx: xObjetivo(c),
     ty: yObjetivo(c),
     x: xObjetivo(c) + ((i % 3) - 1),
-    y: yObjetivo(c),
+    y: yObjetivo(c) + (i % 2 === 0 ? -16 : 16),
   }));
   forceSimulation(nodos)
-    .force('x', forceX<NodoFuerza>((d) => d.tx).strength(0.25))
-    .force('y', forceY<NodoFuerza>((d) => d.ty).strength(0.9))
-    .force('choque', forceCollide<NodoFuerza>(30))
+    .force('x', forceX<NodoFuerza>((d) => d.tx).strength(0.12))
+    .force('y', forceY<NodoFuerza>((d) => d.ty).strength(0.2))
+    .force('choque', forceCollide<NodoFuerza>(40))
     .stop()
-    .tick(200);
+    .tick(300);
 
   const margen = 24;
   const raices: RaizArbol[] = nodos.map((n) => ({
@@ -172,8 +174,17 @@ export function calcularArbol(entrada: EntradaArbol, medidas: Medidas = MEDIDAS)
     temaIds: n.c.temaIds.filter((t) => temaIdsVisibles.has(t)),
     profundidad: profundidadRaiz(n.c.nivelOrigen, entrada.nivelPerfil),
     x: Math.min(medidas.ancho - margen, Math.max(margen, n.x ?? n.tx)),
-    y: Math.min(medidas.alto - margen, Math.max(medidas.suelo + 25, n.y ?? n.ty)),
+    y: Math.min(medidas.alto - margen, Math.max(medidas.suelo + 30, n.y ?? n.ty)),
+    etiquetaArriba: false,
   }));
+  // Si dos raíces quedan cerca en la misma franja, alterna sus etiquetas arriba y abajo.
+  const ordenadas = [...raices].sort((a, b) => a.x - b.x);
+  for (let i = 1; i < ordenadas.length; i++) {
+    const previa = ordenadas[i - 1]!;
+    const actual = ordenadas[i]!;
+    if (actual.x - previa.x < 130 && Math.abs(actual.y - previa.y) < 40)
+      actual.etiquetaArriba = !previa.etiquetaArriba;
+  }
 
   return { medidas, tronco: { x: cx, base: medidas.suelo, copa }, ramas, hojas, raices };
 }

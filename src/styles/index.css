@@ -145,3 +145,50 @@
     @apply font-semibold underline decoration-acento underline-offset-2;
   }
 }
+
+/* Árbol vivo */
+@layer components {
+  .hoja-arbol {
+    @apply cursor-pointer outline-none;
+  }
+  .hoja-arbol .anillo {
+    @apply opacity-0 transition-opacity;
+  }
+  .hoja-arbol:focus-visible .anillo,
+  .hoja-arbol[aria-pressed='true'] .anillo {
+    @apply opacity-100;
+  }
+  .hoja-arbol .cuerpo {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: brotar 520ms cubic-bezier(0.2, 0.8, 0.2, 1.2) both;
+    transition: transform 200ms ease;
+  }
+  .hoja-arbol:hover .cuerpo {
+    transform: scale(1.12);
+  }
+  .raiz-encendida {
+    animation: latido 2.4s ease-in-out infinite;
+  }
+}
+
+@keyframes brotar {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes latido {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
