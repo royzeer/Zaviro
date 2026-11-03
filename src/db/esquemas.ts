@@ -19,6 +19,30 @@ import { TIPOS_FUERZA } from '@/dominio/fuerzas';
  * Las fechas se guardan como texto ISO 8601 para que el respaldo JSON sea legible.
  */
 
+/** Mensajes de validación en español (se ven, por ejemplo, al importar un respaldo con errores). */
+z.setErrorMap((issue, ctx) => {
+  switch (issue.code) {
+    case z.ZodIssueCode.invalid_type:
+      return {
+        message:
+          issue.received === 'undefined' ? 'falta este dato' : `se esperaba ${issue.expected}`,
+      };
+    case z.ZodIssueCode.too_small:
+      return {
+        message:
+          issue.type === 'string' ? 'no puede estar vacío' : `debe ser al menos ${issue.minimum}`,
+      };
+    case z.ZodIssueCode.too_big:
+      return { message: `debe ser como máximo ${issue.maximum}` };
+    case z.ZodIssueCode.invalid_enum_value:
+      return { message: `valor no permitido: ${String(issue.received)}` };
+    case z.ZodIssueCode.invalid_string:
+      return { message: 'formato no válido' };
+    default:
+      return { message: ctx.defaultError };
+  }
+});
+
 const id = z.string().min(1);
 const fechaIso = z.string().datetime({ offset: true });
 const nota = z.number().finite();
