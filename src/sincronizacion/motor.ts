@@ -7,7 +7,13 @@ import { TABLAS_DATOS, type TablaDatos, type ZaviroDB } from '@/db/db';
 import { ajusteEsquema } from '@/db/esquemas';
 import { ESQUEMA_POR_TABLA } from '@/db/repositorio';
 import { escribir, leer } from './almacen';
-import { hayPendiente, listarPendientes, quitarPendientes, type Pendiente } from './pendientes';
+import {
+  hayPendiente,
+  listarPendientes,
+  marcarPendientes,
+  quitarPendientes,
+  type Pendiente,
+} from './pendientes';
 import { marcarTransaccionRemota } from './rastreo';
 
 /** Tablas que viajan al servidor: los datos del estudiante y sus ajustes. */
@@ -153,4 +159,18 @@ export async function borrarDatosLocales(base: ZaviroDB) {
       for (const t of TABLAS_SINCRONIZADAS) await tablaDe(base, t).clear();
     },
   );
+}
+
+/** Indica si este navegador tiene datos de estudio guardados. */
+export async function hayDatosLocales(base: ZaviroDB): Promise<boolean> {
+  for (const t of TABLAS_DATOS) if ((await base[t].count()) > 0) return true;
+  return false;
+}
+
+/** Anota todos los registros locales como pendientes, para subirlos a una cuenta nueva. */
+export async function marcarTodoPendiente(base: ZaviroDB) {
+  for (const t of TABLAS_SINCRONIZADAS) {
+    const ids = await tablaDe(base, t).toCollection().primaryKeys();
+    marcarPendientes(t, ids.map(String));
+  }
 }
