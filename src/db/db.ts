@@ -5,6 +5,7 @@ import type {
   ConceptoRaiz,
   EjemploResuelto,
   ErrorRegistrado,
+  Repaso,
   HitoTrabajoGrado,
   Lectura,
   Materia,
@@ -27,6 +28,7 @@ export class ZaviroDB extends Dexie {
   apuntes!: EntityTable<Apunte, 'id'>;
   errores!: EntityTable<ErrorRegistrado, 'id'>;
   tarjetas!: EntityTable<TarjetaRepaso, 'id'>;
+  repasos!: EntityTable<Repaso, 'id'>;
   ejemplos!: EntityTable<EjemploResuelto, 'id'>;
   simulacros!: EntityTable<SimulacroSaber11, 'id'>;
   hitos!: EntityTable<HitoTrabajoGrado, 'id'>;
@@ -49,6 +51,10 @@ export class ZaviroDB extends Dexie {
       lecturas: 'id, perfilId, estado',
       ajustes: 'clave',
     });
+    // v2: historial de repasos para calcular el dominio por tema.
+    this.version(2).stores({
+      repasos: 'id, tarjetaId, temaId, fecha',
+    });
   }
 }
 
@@ -63,6 +69,7 @@ export const TABLAS_DATOS = [
   'apuntes',
   'errores',
   'tarjetas',
+  'repasos',
   'ejemplos',
   'simulacros',
   'hitos',

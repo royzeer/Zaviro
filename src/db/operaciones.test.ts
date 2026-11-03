@@ -244,3 +244,37 @@ describe('errores y conceptos raíz', () => {
     expect(await base.tarjetas.count()).toBe(0);
   });
 });
+
+describe('repasos', () => {
+  it('registrar un repaso programa la tarjeta, guarda el historial y sube el dominio', async () => {
+    const { crearTarjeta, registrarRepaso } = await import('./operaciones');
+    const p = await nuevo('profesional');
+    const { tema, apunte } = await sembrarMateria(p.id);
+    await base.errores.clear();
+    const t = await crearTarjeta(
+      { origenTipo: 'apunte', origenId: apunte.id, temaId: tema.id, frente: 'a', reverso: 'b' },
+      base,
+    );
+    const ahora = new Date();
+    const r1 = await registrarRepaso(t, 'bien', p.reglas, ahora, base);
+    expect(r1.repeticiones).toBe(1);
+    expect(r1.intervalo).toBe(p.reglas.repaso.intervalosIniciales[0]);
+    await registrarRepaso(r1, 'facil', p.reglas, ahora, base);
+    expect(await base.repasos.where('tarjetaId').equals(t.id).count()).toBe(2);
+    expect((await base.temas.get(tema.id))!.dominio).toBeGreaterThan(0.5);
+  });
+
+  it('borrar una materia borra también el historial de repasos', async () => {
+    const { crearTarjeta, registrarRepaso } = await import('./operaciones');
+    const p = await nuevo('bachillerato');
+    const { materia, tema, apunte } = await sembrarMateria(p.id);
+    const t = await crearTarjeta(
+      { origenTipo: 'apunte', origenId: apunte.id, temaId: tema.id, frente: 'a', reverso: 'b' },
+      base,
+    );
+    await registrarRepaso(t, 'olvide', p.reglas, new Date(), base);
+    await borrarMateria(materia.id, base);
+    expect(await base.repasos.count()).toBe(0);
+    expect(await base.tarjetas.count()).toBe(0);
+  });
+});

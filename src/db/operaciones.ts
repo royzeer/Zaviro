@@ -6,10 +6,13 @@ import type {
   Materia,
   PerfilAcademico,
   Reglas,
+  TarjetaRepaso,
   Tema,
 } from './esquemas';
 import { ahoraIso, guardar, guardarAjuste, nuevoId, obtenerAjuste } from './repositorio';
 import type { Area, Modulo, Nivel } from '@/dominio/catalogo';
+import { calcularDominio } from '@/dominio/dominio';
+import { calificarTarjeta, FACILIDAD_INICIAL, type Calificacion } from '@/dominio/repaso';
 
 /** Operaciones de dominio sobre la base local (crear, borrar en cascada, etc.). */
 
@@ -54,6 +57,7 @@ export async function borrarMateria(materiaId: string, base: ZaviroDB = db) {
       base.apuntes,
       base.errores,
       base.tarjetas,
+      base.repasos,
       base.ejemplos,
       base.conceptosRaiz,
     ],
@@ -79,10 +83,20 @@ export async function borrarMateria(materiaId: string, base: ZaviroDB = db) {
 
 async function borrarTarjetasDe(tipo: 'apunte' | 'error', ids: string[], base: ZaviroDB) {
   if (ids.length === 0) return;
-  await base.tarjetas
+  const tarjetaIds = await base.tarjetas
     .where('[origenTipo+origenId]')
     .anyOf(ids.map((i) => [tipo, i]))
-    .delete();
+    .primaryKeys();
+  await base.repasos.where('tarjetaId').anyOf(tarjetaIds).delete();
+  await base.tarjetas.bulkDelete(tarjetaIds);
+}
+
+/** Borra una tarjeta y su historial de repasos. */
+export async function borrarTarjeta(id: string, base: ZaviroDB = db) {
+  await base.transaction('rw', [base.tarjetas, base.repasos], async () => {
+    await base.repasos.where('tarjetaId').equals(id).delete();
+    await base.tarjetas.delete(id);
+  });
 }
 
 async function borrarTemaInterno(temaId: string, base: ZaviroDB) {
@@ -97,6 +111,7 @@ async function borrarTemaInterno(temaId: string, base: ZaviroDB) {
   await borrarTarjetasDe('error', errorIds, base);
   await base.errores.bulkDelete(errorIds);
   await base.tarjetas.where('temaId').equals(temaId).delete();
+  await base.repasos.where('temaId').equals(temaId).delete();
   await base.conceptosRaiz
     .where('temaIds')
     .equals(temaId)
@@ -110,7 +125,15 @@ async function borrarTemaInterno(temaId: string, base: ZaviroDB) {
 export async function borrarTema(temaId: string, base: ZaviroDB = db) {
   await base.transaction(
     'rw',
-    [base.temas, base.apuntes, base.errores, base.tarjetas, base.ejemplos, base.conceptosRaiz],
+    [
+      base.temas,
+      base.apuntes,
+      base.errores,
+      base.tarjetas,
+      base.repasos,
+      base.ejemplos,
+      base.conceptosRaiz,
+    ],
     () => borrarTemaInterno(temaId, base),
   );
 }
@@ -225,8 +248,83 @@ export async function borrarConcepto(id: string, base: ZaviroDB = db) {
 }
 
 export async function borrarError(id: string, base: ZaviroDB = db) {
-  await base.transaction('rw', [base.errores, base.tarjetas], async () => {
+  await base.transaction('rw', [base.errores, base.tarjetas, base.repasos], async () => {
     await borrarTarjetasDe('error', [id], base);
     await base.errores.delete(id);
   });
+}
+
+/** Crea una tarjeta nueva, lista para repasar de inmediato. */
+export async function crearTarjeta(
+  datos: Pick<TarjetaRepaso, 'origenTipo' | 'origenId' | 'frente' | 'reverso'> & {
+    temaId?: string;
+  },
+  base: ZaviroDB = db,
+) {
+  const { temaId, ...resto } = datos;
+  return guardar(
+    'tarjetas',
+    {
+      id: nuevoId(),
+      ...resto,
+      ...(temaId ? { temaId } : {}),
+      facilidad: FACILIDAD_INICIAL,
+      intervalo: 0,
+      repeticiones: 0,
+      proximoRepaso: ahoraIso(),
+    },
+    base,
+  );
+}
+
+/** Recalcula y guarda el dominio de un tema a partir de sus repasos, tarjetas y errores. */
+export async function recalcularDominio(temaId: string, ahora = new Date(), base: ZaviroDB = db) {
+  const tema = await base.temas.get(temaId);
+  if (!tema) return;
+  const [repasos, tarjetas, errores] = await Promise.all([
+    base.repasos.where('temaId').equals(temaId).toArray(),
+    base.tarjetas.where('temaId').equals(temaId).toArray(),
+    base.errores.where('temaId').equals(temaId).toArray(),
+  ]);
+  const dominio = calcularDominio({ repasos, tarjetas, errores }, ahora);
+  if (dominio !== tema.dominio) await base.temas.update(temaId, { dominio });
+  return dominio;
+}
+
+/** Recalcula el dominio de todos los temas (se usa al abrir la app para reflejar el paso del tiempo). */
+export async function recalcularDominios(ahora = new Date(), base: ZaviroDB = db) {
+  const ids = await base.temas.toCollection().primaryKeys();
+  for (const id of ids) await recalcularDominio(id, ahora, base);
+}
+
+/** Registra un repaso: aplica SM-2 a la tarjeta, guarda el historial y actualiza el dominio del tema. */
+export async function registrarRepaso(
+  tarjeta: TarjetaRepaso,
+  calificacion: Calificacion,
+  reglas: Pick<Reglas, 'repaso'>,
+  ahora = new Date(),
+  base: ZaviroDB = db,
+) {
+  const actualizada = calificarTarjeta(tarjeta, calificacion, reglas, ahora);
+  await base.transaction(
+    'rw',
+    [base.tarjetas, base.repasos, base.temas, base.errores],
+    async () => {
+      await guardar('tarjetas', actualizada, base);
+      await guardar(
+        'repasos',
+        {
+          id: nuevoId(),
+          tarjetaId: tarjeta.id,
+          ...(tarjeta.temaId ? { temaId: tarjeta.temaId } : {}),
+          fecha: ahora.toISOString(),
+          calificacion,
+          ...(tarjeta.esEjemplo ? { esEjemplo: true } : {}),
+        },
+        base,
+      );
+      if (tarjeta.temaId) await recalcularDominio(tarjeta.temaId, ahora, base);
+    },
+  );
+  return actualizada;
 }

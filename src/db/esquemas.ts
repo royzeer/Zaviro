@@ -162,7 +162,8 @@ export const errorEsquema = z.object({
 
 export const tarjetaEsquema = z.object({
   id,
-  origenTipo: z.enum(['apunte', 'error']),
+  /** apunte, error, raíz (repaso corto de una base) o manual. */
+  origenTipo: z.enum(['apunte', 'error', 'raiz', 'manual']),
   origenId: id,
   temaId: id.optional(),
   frente: z.string().min(1),
@@ -171,6 +172,15 @@ export const tarjetaEsquema = z.object({
   intervalo: z.number().min(0),
   repeticiones: z.number().int().min(0),
   proximoRepaso: fechaIso,
+  esEjemplo,
+});
+
+export const repasoEsquema = z.object({
+  id,
+  tarjetaId: id,
+  temaId: id.optional(),
+  fecha: fechaIso,
+  calificacion: z.enum(['olvide', 'dificil', 'bien', 'facil']),
   esEjemplo,
 });
 
@@ -234,6 +244,7 @@ export type ConceptoRaiz = z.infer<typeof conceptoRaizEsquema>;
 export type Apunte = z.infer<typeof apunteEsquema>;
 export type ErrorRegistrado = z.infer<typeof errorEsquema>;
 export type TarjetaRepaso = z.infer<typeof tarjetaEsquema>;
+export type Repaso = z.infer<typeof repasoEsquema>;
 export type EjemploResuelto = z.infer<typeof ejemploResueltoEsquema>;
 export type SimulacroSaber11 = z.infer<typeof simulacroSaber11Esquema>;
 export type HitoTrabajoGrado = z.infer<typeof hitoEsquema>;
