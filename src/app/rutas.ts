@@ -6,8 +6,8 @@ export interface DefinicionRuta {
   titulo: string;
   descripcion: string;
   icono: NombreIcono;
-  /** Módulo que debe estar activo en el perfil para mostrar la ruta. */
-  modulo?: Modulo;
+  /** La ruta se muestra si el perfil tiene activo alguno de estos módulos. */
+  modulos?: Modulo[];
   grupo: 'principal' | 'nivel' | 'sistema';
 }
 
@@ -24,7 +24,7 @@ export const RUTAS: DefinicionRuta[] = [
     titulo: 'Materias',
     descripcion: 'Materias, temas, cortes o períodos y créditos.',
     icono: 'materias',
-    modulo: 'materias',
+    modulos: ['materias'],
     grupo: 'principal',
   },
   {
@@ -32,7 +32,7 @@ export const RUTAS: DefinicionRuta[] = [
     titulo: 'Apuntes',
     descripcion: 'Tus apuntes en Markdown, organizados por tema.',
     icono: 'apuntes',
-    modulo: 'apuntes',
+    modulos: ['apuntes'],
     grupo: 'principal',
   },
   {
@@ -40,7 +40,7 @@ export const RUTAS: DefinicionRuta[] = [
     titulo: 'Errores',
     descripcion: 'Registra un error en pocos toques y encuentra su raíz.',
     icono: 'errores',
-    modulo: 'errores',
+    modulos: ['errores'],
     grupo: 'principal',
   },
   {
@@ -48,7 +48,7 @@ export const RUTAS: DefinicionRuta[] = [
     titulo: 'Repasar',
     descripcion: 'Tarjetas que te tocan hoy, con repetición espaciada.',
     icono: 'repasar',
-    modulo: 'repaso',
+    modulos: ['repaso'],
     grupo: 'principal',
   },
   {
@@ -56,7 +56,7 @@ export const RUTAS: DefinicionRuta[] = [
     titulo: 'Notas y plan',
     descripcion: 'Cuánto necesitas, tu promedio y dónde rinde más tu hora.',
     icono: 'notas',
-    modulo: 'notas',
+    modulos: ['notas', 'plan'],
     grupo: 'principal',
   },
   {
@@ -64,7 +64,7 @@ export const RUTAS: DefinicionRuta[] = [
     titulo: 'Ejemplos resueltos',
     descripcion: 'Soluciones paso a paso con cada valor explicado.',
     icono: 'ejemplos',
-    modulo: 'ejemplos',
+    modulos: ['ejemplos'],
     grupo: 'principal',
   },
   {
@@ -72,7 +72,7 @@ export const RUTAS: DefinicionRuta[] = [
     titulo: 'Saber 11',
     descripcion: 'Simulacros por prueba y tu puntaje global.',
     icono: 'saber',
-    modulo: 'saber11',
+    modulos: ['saber11'],
     grupo: 'nivel',
   },
   {
@@ -80,7 +80,7 @@ export const RUTAS: DefinicionRuta[] = [
     titulo: 'Saber Pro / TyT',
     descripcion: 'Preparación por módulos genéricos y específicos.',
     icono: 'saber',
-    modulo: 'saberPro',
+    modulos: ['saberPro'],
     grupo: 'nivel',
   },
   {
@@ -88,7 +88,7 @@ export const RUTAS: DefinicionRuta[] = [
     titulo: 'Trabajo de grado',
     descripcion: 'Hitos, fechas y avances de tu trabajo de grado.',
     icono: 'hitos',
-    modulo: 'trabajoGrado',
+    modulos: ['trabajoGrado'],
     grupo: 'nivel',
   },
   {
@@ -96,7 +96,7 @@ export const RUTAS: DefinicionRuta[] = [
     titulo: 'Lecturas',
     descripcion: 'Lecturas académicas, notas y banco de citas.',
     icono: 'lecturas',
-    modulo: 'lecturas',
+    modulos: ['lecturas'],
     grupo: 'nivel',
   },
   {
@@ -110,4 +110,25 @@ export const RUTAS: DefinicionRuta[] = [
 
 export function buscarRuta(ruta: string): DefinicionRuta | undefined {
   return RUTAS.find((r) => r.ruta === ruta);
+}
+
+/**
+ * Resuelve una ruta con parámetro, por ejemplo /materias/abc devuelve
+ * la definición de /materias y el parámetro "abc".
+ */
+export function resolverRuta(
+  ruta: string,
+): { def: DefinicionRuta; parametro?: string } | undefined {
+  const exacta = buscarRuta(ruta);
+  if (exacta) return { def: exacta };
+  const [, base, parametro] = /^(\/[^/]+)\/([^/]+)$/.exec(ruta) ?? [];
+  const def = base ? buscarRuta(base) : undefined;
+  return def && parametro ? { def, parametro: decodeURIComponent(parametro) } : undefined;
+}
+
+/** Rutas visibles para los módulos activos de un perfil. */
+export function rutasVisibles(modulosActivos: Modulo[] | undefined): DefinicionRuta[] {
+  return RUTAS.filter(
+    (r) => !r.modulos || !modulosActivos || r.modulos.some((m) => modulosActivos.includes(m)),
+  );
 }

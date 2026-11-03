@@ -165,6 +165,8 @@ export function reglasSugeridas(nivel: Nivel): Reglas {
 export interface Vocabulario {
   materia: string;
   materias: string;
+  /** Texto del botón para crear, con el género correcto. */
+  nuevaMateria: string;
   componente: string;
   componentes: string;
   parcial: string;
@@ -181,6 +183,7 @@ export function vocabulario(nivel: Nivel): Vocabulario {
       return {
         materia: 'Materia',
         materias: 'Materias',
+        nuevaMateria: 'Nueva materia',
         componente: 'Período',
         componentes: 'Períodos',
         parcial: 'evaluación',
@@ -195,6 +198,7 @@ export function vocabulario(nivel: Nivel): Vocabulario {
       return {
         materia: 'Materia o competencia',
         materias: 'Materias y competencias',
+        nuevaMateria: 'Nueva materia o competencia',
         componente: 'Evidencia',
         componentes: 'Evidencias',
         parcial: 'evaluación',
@@ -208,6 +212,7 @@ export function vocabulario(nivel: Nivel): Vocabulario {
       return {
         materia: 'Materia',
         materias: 'Materias',
+        nuevaMateria: 'Nueva materia',
         componente: 'Corte',
         componentes: 'Cortes',
         parcial: 'parcial',
@@ -222,6 +227,7 @@ export function vocabulario(nivel: Nivel): Vocabulario {
       return {
         materia: 'Curso',
         materias: 'Cursos',
+        nuevaMateria: 'Nuevo curso',
         componente: 'Corte',
         componentes: 'Cortes',
         parcial: 'entrega',
@@ -235,6 +241,7 @@ export function vocabulario(nivel: Nivel): Vocabulario {
       return {
         materia: 'Seminario',
         materias: 'Seminarios',
+        nuevaMateria: 'Nuevo seminario',
         componente: 'Hito',
         componentes: 'Hitos',
         parcial: 'entrega',

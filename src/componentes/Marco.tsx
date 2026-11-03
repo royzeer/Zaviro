@@ -2,7 +2,9 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { hrefDe, useRutaActual } from '@/app/enrutador';
-import { RUTAS, type DefinicionRuta } from '@/app/rutas';
+import { rutasVisibles, type DefinicionRuta } from '@/app/rutas';
+import { usePerfil } from '@/estado/usePerfil';
+import { SelectorPerfil } from './SelectorPerfil';
 import { useApp, temaEfectivo } from '@/estado/app';
 import { Icono } from './Icono';
 
@@ -53,25 +55,34 @@ function EnlaceNav({
 
 function Navegacion({ onNavegar }: { onNavegar?: () => void }) {
   const actual = useRutaActual();
+  const { perfil } = usePerfil();
+  const rutas = rutasVisibles(perfil?.modulosActivos);
   const grupos: { titulo?: string; rutas: DefinicionRuta[] }[] = [
-    { rutas: RUTAS.filter((r) => r.grupo === 'principal') },
-    { titulo: 'Tu nivel', rutas: RUTAS.filter((r) => r.grupo === 'nivel') },
-    { rutas: RUTAS.filter((r) => r.grupo === 'sistema') },
+    { rutas: rutas.filter((r) => r.grupo === 'principal') },
+    { titulo: 'Tu nivel', rutas: rutas.filter((r) => r.grupo === 'nivel') },
+    { rutas: rutas.filter((r) => r.grupo === 'sistema') },
   ];
   return (
     <nav aria-label="Secciones" className="flex flex-col gap-5">
-      {grupos.map((g, i) => (
-        <div key={i} className="flex flex-col gap-1">
-          {g.titulo && (
-            <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-lateral-tinta">
-              {g.titulo}
-            </p>
-          )}
-          {g.rutas.map((r) => (
-            <EnlaceNav key={r.ruta} r={r} activa={actual === r.ruta} onClick={onNavegar} />
-          ))}
-        </div>
-      ))}
+      {grupos
+        .filter((g) => g.rutas.length > 0)
+        .map((g, i) => (
+          <div key={i} className="flex flex-col gap-1">
+            {g.titulo && (
+              <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-lateral-tinta">
+                {g.titulo}
+              </p>
+            )}
+            {g.rutas.map((r) => (
+              <EnlaceNav
+                key={r.ruta}
+                r={r}
+                activa={actual === r.ruta || actual.startsWith(`${r.ruta}/`)}
+                onClick={onNavegar}
+              />
+            ))}
+          </div>
+        ))}
     </nav>
   );
 }
@@ -175,27 +186,29 @@ function BarraInferior() {
       className="fixed inset-x-0 bottom-0 z-30 border-t border-linea bg-superficie/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
       <ul className="mx-auto grid max-w-md grid-cols-5">
-        {RUTAS.filter((r) => RUTAS_BARRA_INFERIOR.includes(r.ruta)).map((r) => {
-          const activa = actual === r.ruta;
-          return (
-            <li key={r.ruta}>
-              <a
-                href={hrefDe(r.ruta)}
-                aria-current={activa ? 'page' : undefined}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold ${
-                  activa ? 'text-tinta' : 'text-tinta-suave'
-                }`}
-              >
-                <span
-                  className={`rounded-full px-3 py-1 ${activa ? 'bg-superficie-2 text-acento' : ''}`}
+        {rutasVisibles(undefined)
+          .filter((r) => RUTAS_BARRA_INFERIOR.includes(r.ruta))
+          .map((r) => {
+            const activa = actual === r.ruta || (r.ruta !== '/' && actual.startsWith(`${r.ruta}/`));
+            return (
+              <li key={r.ruta}>
+                <a
+                  href={hrefDe(r.ruta)}
+                  aria-current={activa ? 'page' : undefined}
+                  className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold ${
+                    activa ? 'text-tinta' : 'text-tinta-suave'
+                  }`}
                 >
-                  <Icono nombre={r.icono} tamano={20} />
-                </span>
-                {r.titulo}
-              </a>
-            </li>
-          );
-        })}
+                  <span
+                    className={`rounded-full px-3 py-1 ${activa ? 'bg-superficie-2 text-acento' : ''}`}
+                  >
+                    <Icono nombre={r.icono} tamano={20} />
+                  </span>
+                  {r.titulo}
+                </a>
+              </li>
+            );
+          })}
         <li>
           <button
             onClick={() => abrir(true)}
@@ -251,16 +264,7 @@ function Encabezado({ titulo, descripcion }: { titulo: string; descripcion: stri
           </time>
         </div>
         <BotonTema />
-        <a
-          href={hrefDe('/ajustes')}
-          className="flex h-10 items-center gap-2 rounded-xl border border-linea bg-superficie pl-1 pr-3 text-sm font-semibold"
-          title="Perfil académico"
-        >
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-lateral text-lateral-tinta">
-            <Icono nombre="perfil" tamano={18} />
-          </span>
-          <span className="hidden sm:inline">Sin perfil</span>
-        </a>
+        <SelectorPerfil />
       </div>
     </header>
   );
