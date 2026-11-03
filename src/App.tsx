@@ -1,26 +1,38 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useRutaActual } from '@/app/enrutador';
 import { resolverRuta } from '@/app/rutas';
 import { Marco } from '@/componentes/Marco';
 import { aplicarTema, useApp } from '@/estado/app';
 import { usePerfil } from '@/estado/usePerfil';
-import { Ajustes } from '@/vistas/Ajustes';
 import { Apuntes } from '@/vistas/Apuntes';
 import { Bienvenida } from '@/vistas/Bienvenida';
 import { EnConstruccion } from '@/vistas/EnConstruccion';
 import { Errores } from '@/vistas/Errores';
 import { Repasar } from '@/vistas/Repasar';
-import { NotasPlan } from '@/vistas/NotasPlan';
-import { Saber11 } from '@/vistas/Saber11';
-import { Ejemplos } from '@/vistas/Ejemplos';
-import { SaberPro } from '@/vistas/SaberPro';
-import { TrabajoGrado } from '@/vistas/TrabajoGrado';
-import { Lecturas } from '@/vistas/Lecturas';
-import { Bitacora } from '@/vistas/Bitacora';
 import { recalcularDominios } from '@/db/operaciones';
 import { Inicio } from '@/vistas/Inicio';
 import { Materias } from '@/vistas/Materias';
 import { Perfil } from '@/vistas/Perfil';
+
+// Las pantallas menos frecuentes se cargan por partes, solo cuando se abren.
+const Ajustes = lazy(() => import('@/vistas/Ajustes').then((m) => ({ default: m.Ajustes })));
+const NotasPlan = lazy(() => import('@/vistas/NotasPlan').then((m) => ({ default: m.NotasPlan })));
+const Saber11 = lazy(() => import('@/vistas/Saber11').then((m) => ({ default: m.Saber11 })));
+const Ejemplos = lazy(() => import('@/vistas/Ejemplos').then((m) => ({ default: m.Ejemplos })));
+const SaberPro = lazy(() => import('@/vistas/SaberPro').then((m) => ({ default: m.SaberPro })));
+const TrabajoGrado = lazy(() =>
+  import('@/vistas/TrabajoGrado').then((m) => ({ default: m.TrabajoGrado })),
+);
+const Lecturas = lazy(() => import('@/vistas/Lecturas').then((m) => ({ default: m.Lecturas })));
+const Bitacora = lazy(() => import('@/vistas/Bitacora').then((m) => ({ default: m.Bitacora })));
+
+function Cargando() {
+  return (
+    <p role="status" className="py-10 text-center text-sm text-tinta-suave">
+      Cargando…
+    </p>
+  );
+}
 
 function useTemaDelSistema() {
   const tema = useApp((s) => s.tema);
@@ -118,7 +130,9 @@ export function App() {
       titulo={def.ruta === '/materias' ? vocab.materias : def.titulo}
       descripcion={def.descripcion}
     >
-      <div key={def.ruta}>{contenido}</div>
+      <div key={def.ruta}>
+        <Suspense fallback={<Cargando />}>{contenido}</Suspense>
+      </div>
     </Marco>
   );
 }
