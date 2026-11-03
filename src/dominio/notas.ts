@@ -93,7 +93,7 @@ export function notaProyectada(m: Pick<Materia, 'notaFinal' | 'cortes'>): number
 
 export interface ItemPromedio {
   nota: number;
-  creditos?: number;
+  creditos: number | undefined;
 }
 
 /** Promedio simple o ponderado por créditos. Las materias sin créditos pesan 0 en el ponderado. */
