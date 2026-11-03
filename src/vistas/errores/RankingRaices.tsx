@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { PerfilAcademico } from '@/db/esquemas';
-import { borrarConcepto } from '@/db/operaciones';
+import { borrarConcepto, crearTarjeta } from '@/db/operaciones';
 import { guardar } from '@/db/repositorio';
 import { NIVELES, NOMBRE_NIVEL, type Nivel } from '@/dominio/catalogo';
 import { minutosRepasoBase, puntuarRaices } from '@/dominio/raices';
@@ -152,6 +152,32 @@ export function RankingRaices({
                       {minutosRepasoBase(r)} minutos de {r.concepto.nombre} con ejercicios de{' '}
                       {NOMBRE_NIVEL[r.concepto.nivelOrigen].toLowerCase()}.
                     </p>
+                  )}
+                  {r.basePendiente && (
+                    <div className="mt-2">
+                      {datos.tarjetasDeRaices.includes(r.concepto.id) ? (
+                        <p className="text-xs font-semibold text-exito">
+                          Repaso corto en tu cola de Repasar.
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          className="boton-secundario px-3 py-1.5 text-xs"
+                          onClick={() =>
+                            void crearTarjeta({
+                              origenTipo: 'raiz',
+                              origenId: r.concepto.id,
+                              frente: `Base de ${NOMBRE_NIVEL[r.concepto.nivelOrigen].toLowerCase()}: ${r.concepto.nombre}. Explica la idea con tus palabras y resuelve un ejemplo corto.`,
+                              reverso:
+                                r.concepto.descripcion ||
+                                'Compara tu explicación con tus apuntes o con un ejemplo resuelto.',
+                            })
+                          }
+                        >
+                          Crear repaso corto
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

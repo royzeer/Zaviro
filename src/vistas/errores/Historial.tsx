@@ -3,6 +3,8 @@ import type { PerfilAcademico } from '@/db/esquemas';
 import { borrarError } from '@/db/operaciones';
 import { guardar } from '@/db/repositorio';
 import { esNivelAnterior, NOMBRE_TIPO_ERROR } from '@/dominio/catalogo';
+import { Dialogo } from '@/componentes/Dialogo';
+import { FormTarjeta } from '@/componentes/FormTarjeta';
 import { Icono } from '@/componentes/Icono';
 import { EstadoVacio, Tarjeta } from '@/componentes/Tarjeta';
 import { confirmar } from '@/utilidades/confirmar';
@@ -13,6 +15,8 @@ export function Historial({ perfil, datos }: { perfil: PerfilAcademico; datos: D
   const [materiaId, setMateriaId] = useState('');
   const [estado, setEstado] = useState<'pendientes' | 'resueltos' | 'todos'>('pendientes');
   const [abierto, setAbierto] = useState<string | null>(null);
+  const [paraTarjeta, setParaTarjeta] = useState<string | null>(null);
+  const conTarjeta = new Set(datos.tarjetasDeErrores);
   const materias = datos.materias.filter((m) => m.perfilId === perfil.id);
   const ids = new Set(materias.map((m) => m.id));
   const materia = new Map(materias.map((m) => [m.id, m]));
@@ -25,6 +29,7 @@ export function Historial({ perfil, datos }: { perfil: PerfilAcademico; datos: D
       (estado === 'todos' || (estado === 'resueltos') === e.resuelto),
   );
 
+  const errorTarjeta = datos.errores.find((e) => e.id === paraTarjeta);
   return (
     <Tarjeta titulo="Historial de errores" icono="apuntes">
       <div className="mb-4 flex flex-wrap gap-2">
@@ -110,6 +115,15 @@ export function Historial({ perfil, datos }: { perfil: PerfilAcademico; datos: D
                     )}
                   </button>
                   <div className="flex shrink-0 gap-1">
+                    {!conTarjeta.has(e.id) && (
+                      <button
+                        type="button"
+                        className="boton-fantasma px-2.5 py-1.5 text-xs"
+                        onClick={() => setParaTarjeta(e.id)}
+                      >
+                        Tarjeta
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="boton-secundario px-3 py-1.5 text-xs"
@@ -150,6 +164,26 @@ export function Historial({ perfil, datos }: { perfil: PerfilAcademico; datos: D
           })}
         </ul>
       )}
+      <Dialogo
+        abierto={Boolean(errorTarjeta)}
+        titulo="Tarjeta desde este error"
+        onCerrar={() => setParaTarjeta(null)}
+      >
+        {errorTarjeta && (
+          <FormTarjeta
+            inicial={{
+              origenTipo: 'error',
+              origenId: errorTarjeta.id,
+              temaId: errorTarjeta.temaId,
+              frente:
+                errorTarjeta.enunciado ||
+                `Resuelve de nuevo: ${tema.get(errorTarjeta.temaId)?.titulo ?? ''}`,
+              reverso: errorTarjeta.solucionCorrecta,
+            }}
+            onListo={() => setParaTarjeta(null)}
+          />
+        )}
+      </Dialogo>
     </Tarjeta>
   );
 }

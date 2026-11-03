@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ErrorRegistrado, PerfilAcademico } from '@/db/esquemas';
-import { crearConcepto, registrarError } from '@/db/operaciones';
+import { crearConcepto, crearTarjeta, registrarError } from '@/db/operaciones';
 import { ahoraIso, guardar, nuevoId } from '@/db/repositorio';
 import {
   esNivelAnterior,
@@ -46,6 +46,7 @@ export function RegistroRapido({
   const [tipo, setTipo] = useState<TipoError | null>(null);
   const [conceptoIds, setConceptoIds] = useState<string[]>([]);
   const [detalles, setDetalles] = useState(false);
+  const [conTarjeta, setConTarjeta] = useState(true);
   const [texto, setTexto] = useState({ enunciado: '', miRespuesta: '', solucionCorrecta: '' });
   const [nuevoTema, setNuevoTema] = useState('');
   const [nuevaRaiz, setNuevaRaiz] = useState('');
@@ -98,11 +99,22 @@ export function RegistroRapido({
       resuelto: false,
     };
     await registrarError(error);
+    const hayTarjeta =
+      conTarjeta && texto.enunciado.trim() !== '' && texto.solucionCorrecta.trim() !== '';
+    if (hayTarjeta) {
+      await crearTarjeta({
+        origenTipo: 'error',
+        origenId: error.id,
+        temaId,
+        frente: texto.enunciado.trim(),
+        reverso: texto.solucionCorrecta.trim(),
+      });
+    }
     const bases = datos.conceptos.filter(
       (c) => conceptoIds.includes(c.id) && esNivelAnterior(c.nivelOrigen, perfil.nivel),
     );
     setAviso({
-      texto: 'Error registrado.',
+      texto: hayTarjeta ? 'Error registrado y tarjeta de repaso creada.' : 'Error registrado.',
       bases: bases.map((b) => `${b.nombre} (${NOMBRE_NIVEL[b.nivelOrigen]})`),
     });
     setTipo(null);
@@ -284,6 +296,15 @@ export function RegistroRapido({
                   )}
                 </Campo>
               </div>
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-[rgb(var(--primario))]"
+                  checked={conTarjeta}
+                  onChange={(e) => setConTarjeta(e.target.checked)}
+                />
+                Crear tarjeta de repaso con el enunciado y la solución
+              </label>
             </div>
           )}
         </div>

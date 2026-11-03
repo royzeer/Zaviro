@@ -7,7 +7,9 @@ import { ahoraIso, guardar, nuevoId } from '@/db/repositorio';
 import { useConsulta } from '@/db/useConsulta';
 import { usePerfil } from '@/estado/usePerfil';
 import { confirmar } from '@/utilidades/confirmar';
+import { Dialogo } from '@/componentes/Dialogo';
 import { Campo } from '@/componentes/Formulario';
+import { FormTarjeta } from '@/componentes/FormTarjeta';
 import { Icono } from '@/componentes/Icono';
 import { EstadoVacio } from '@/componentes/Tarjeta';
 import { fechaCorta } from '@/utilidades/fechas';
@@ -18,6 +20,7 @@ function Editor({ inicial, esNuevo }: { inicial: Apunte; esNuevo: boolean }) {
   const [a, setA] = useState(inicial);
   const [vista, setVista] = useState<'escribir' | 'previa'>('escribir');
   const [estado, setEstado] = useState('');
+  const [tarjeta, setTarjeta] = useState(false);
   useEffect(() => setA(inicial), [inicial]);
 
   const datos = useConsulta(async () => {
@@ -144,6 +147,11 @@ function Editor({ inicial, esNuevo }: { inicial: Apunte; esNuevo: boolean }) {
           {cambiado ? 'Cambios sin guardar.' : estado}
         </p>
         {!esNuevo && (
+          <button type="button" className="boton-secundario" onClick={() => setTarjeta(true)}>
+            Crear tarjeta
+          </button>
+        )}
+        {!esNuevo && (
           <button type="button" className="boton-fantasma" onClick={borrar}>
             <Icono nombre="papelera" tamano={16} /> Borrar
           </button>
@@ -157,6 +165,28 @@ function Editor({ inicial, esNuevo }: { inicial: Apunte; esNuevo: boolean }) {
           Guardar
         </button>
       </div>
+      <Dialogo
+        abierto={tarjeta}
+        titulo="Tarjeta desde este apunte"
+        onCerrar={() => setTarjeta(false)}
+      >
+        {tarjeta && (
+          <FormTarjeta
+            inicial={{
+              origenTipo: 'apunte',
+              origenId: a.id,
+              temaId: a.temaId,
+              frente: a.titulo ? `¿Qué sabes de ${a.titulo}?` : '',
+              reverso: resumenMarkdown(a.contenido, 400),
+            }}
+            temas={temas}
+            onListo={() => {
+              setTarjeta(false);
+              setEstado('Tarjeta creada. La verás en Repasar.');
+            }}
+          />
+        )}
+      </Dialogo>
     </section>
   );
 }
