@@ -14,7 +14,7 @@ La app es inteligente por lógica propia, no por IA. Cruza los errores de todas 
 | 3    | Repetición espaciada y pantalla de repaso                                           | Lista     |
 | 4    | Calculadora de notas, promedio ponderado, rendimiento de estudio y plan             | Lista     |
 | 5    | Módulos por nivel: Saber 11, Trabajo de grado, Lecturas, Saber Pro / TyT            | Lista     |
-| 6    | Ejemplos resueltos por área con diagrama de cuerpo libre                            | Pendiente |
+| 6    | Ejemplos resueltos por área con diagrama de cuerpo libre                            | Lista     |
 | 7    | Respaldo JSON, PWA y pulido                                                         | Pendiente |
 
 ## Requisitos
@@ -104,6 +104,13 @@ Se pueden tener varios perfiles a la vez (por ejemplo, un tecnólogo y una carre
 - Lecturas (posgrado): cola de lectura (primero lo que estás leyendo), estado por lectura, notas y citas con fuente y página. El banco de citas reúne todas las citas, se busca sin importar tildes y copia cada cita con su fuente. Ver `src/dominio/lecturas.ts`.
 - Bitácora de avances (doctorado; se puede activar en especialización y maestría): entradas con fecha, horas y el hito al que aportan, con horas de la semana, de los últimos 30 días y aviso si llevas una semana sin registrar. Ver `src/dominio/bitacora.ts`.
 - Los datos de ejemplo traen un perfil de bachillerato con simulacros, prácticas de Saber TyT en el perfil de tecnólogo y un perfil de maestría con hitos, lecturas y bitácora.
+
+## Ejemplos resueltos
+
+- Biblioteca de ejemplos que se resuelven solos: cambias los datos y cada paso, despeje, valor y la comprobación se recalculan. Hay uno o dos por área: plano inclinado con fricción y peso colgado de dos cables (ingeniería y ciencias exactas, también naturales), dilución, dosis según el peso (ejercicio académico), búsqueda binaria, elasticidad precio de la demanda y escalar una imagen. Primero aparecen los del área del perfil. Ver `src/dominio/ejemplos/`.
+- Cada paso tiene una explicación en palabras, el cálculo con los números reemplazados y el resultado con su unidad. La comprobación se verifica en el código (por ejemplo, que la suma de fuerzas dé m · a o cero).
+- Los de mecánica muestran el diagrama de cuerpo libre en SVG: cada fuerza como flecha desde el centro, con un color por tipo (peso, normal, fricción, tensión, aplicada), largo proporcional a su magnitud y una tabla con sus componentes. Ver `src/dominio/fuerzas.ts` y `src/componentes/DiagramaCuerpoLibre.tsx`.
+- Mis ejemplos: guarda una copia de la biblioteca en un tema o escribe los tuyos con pasos, comprobación y, si quieres, las fuerzas del diagrama (se muestra la suma de fuerzas mientras las escribes).
 
 ## Datos y privacidad
 
