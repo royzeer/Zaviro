@@ -14,6 +14,7 @@ import { ArbolVivo } from '@/componentes/ArbolVivo';
 import { hrefDe } from '@/app/enrutador';
 import { EstadoVacio, Tarjeta } from '@/componentes/Tarjeta';
 import { ArbolMuestra } from './ArbolMuestra';
+import { PlanDeHoy } from './inicio/PlanDeHoy';
 
 function Dato({ etiqueta, valor }: { etiqueta: string; valor: number | string }) {
   return (
@@ -61,7 +62,16 @@ export function Inicio() {
       const n = nivelPerfil.get(m.perfilId);
       if (n) nivelPorMateria.set(m.id, n);
     }
-    const ranking = puntuarRaices({ conceptos, errores, nivelPorMateria }).slice(0, 3);
+    const todas = puntuarRaices({ conceptos, errores, nivelPorMateria });
+    const ranking = todas.slice(0, 3);
+    const pendiente = todas.find((r) => r.basePendiente && r.noResueltos > 0);
+    const base = pendiente
+      ? {
+          nombre: pendiente.concepto.nombre,
+          nivelOrigen: pendiente.concepto.nivelOrigen,
+          noResueltos: pendiente.noResueltos,
+        }
+      : undefined;
     return {
       materias,
       temas,
@@ -72,6 +82,7 @@ export function Inicio() {
       fallan: temasQueFallan(errores.filter((e) => ids.includes(e.materiaId))),
       conceptos,
       ranking,
+      base,
       apuntes,
     };
   }, [perfil?.id]);
@@ -232,17 +243,13 @@ export function Inicio() {
         )}
       </Tarjeta>
 
-      <Tarjeta titulo="Plan de hoy" icono="notas" className="md:col-span-2 xl:col-span-3">
-        <div className="grid gap-3 sm:grid-cols-3">
-          {['Tema con más rendimiento', 'Repaso corto', 'Base de un nivel anterior'].map((t) => (
-            <div key={t} className="rounded-xl border border-linea/70 bg-superficie-2/60 p-4">
-              <p className="text-sm font-bold">{t}</p>
-              <p className="mt-1 text-xs text-tinta-suave">
-                Se calculará con tus materias, temas y errores.
-              </p>
-            </div>
-          ))}
-        </div>
+      <Tarjeta
+        titulo="Plan de hoy"
+        icono="notas"
+        verTodo="/notas"
+        className="md:col-span-2 xl:col-span-3"
+      >
+        {perfil && <PlanDeHoy perfil={perfil} base={datos?.base} />}
       </Tarjeta>
     </div>
   );
