@@ -119,16 +119,20 @@ function TarjetaConsejo() {
 
 function EstadoNube() {
   const sincronizacion = useSesion((s) => s.sincronizacion);
-  const ok = sincronizacion.estado === 'inactivo' && sincronizacion.pendientes === 0;
+  const { estado, pendientes } = sincronizacion;
+  // Verde: todo subido. Rojo: no se pudo sincronizar. Gris: subiendo o por subir en un momento.
+  const color =
+    estado === 'sinConexion' || estado === 'error'
+      ? 'bg-peligro'
+      : estado === 'inactivo' && pendientes === 0
+        ? 'bg-exito'
+        : 'bg-lateral-tinta/50';
   return (
     <a
       href={hrefDe('/ajustes')}
       className="mt-3 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-lateral-tinta hover:bg-lateral-tinta/10"
     >
-      <span
-        aria-hidden="true"
-        className={`h-2 w-2 shrink-0 rounded-full ${ok ? 'bg-exito' : sincronizacion.estado === 'sincronizando' ? 'bg-lateral-tinta/50' : 'bg-peligro'}`}
-      />
+      <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${color}`} />
       <span className="min-w-0 truncate" title={textoSincronizacion(sincronizacion)}>
         {textoSincronizacionCorto(sincronizacion)}
       </span>
