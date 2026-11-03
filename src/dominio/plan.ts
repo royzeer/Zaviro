@@ -194,7 +194,8 @@ export function generarPlan(params: {
   for (const r of params.rendimiento) {
     if (!examen(r)) continue;
     const falta = pendientes.get(r.tema.id) ?? 0;
-    if (falta > 0)
+    // Menos de un cuarto de hora no alcanza a ser un bloque: no se cuenta como faltante.
+    if (falta >= 0.25)
       faltantesPorMateria.set(r.materia.id, (faltantesPorMateria.get(r.materia.id) ?? 0) + falta);
   }
   const faltantes = [...faltantesPorMateria]

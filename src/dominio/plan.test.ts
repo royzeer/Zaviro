@@ -33,6 +33,14 @@ const horasDe = (plan: ReturnType<typeof generarPlan>, temaId: string) =>
     .reduce((s, b) => s + b.horas, 0);
 
 describe('plan de estudio', () => {
+  it('no avisa que faltan horas por restos de minutos que no alcanzan a ser un bloque', () => {
+    const plan = generarPlan({
+      rendimiento: [item('a', 'm1', 3, 10.1, 30), item('b', 'm1', 3, 7.2, 30)],
+      hoy,
+    });
+    expect(plan.faltantes).toEqual([]);
+  });
+
   it('empieza por el tema de mayor rendimiento', () => {
     const plan = generarPlan({
       rendimiento: [item('bajo', 'm1', 2, 3, 5), item('alto', 'm1', 8, 3, 5)],
