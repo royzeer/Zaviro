@@ -22,6 +22,7 @@ import {
 import { EditorReglas } from '@/componentes/EditorReglas';
 import { Campo, NumeroEntrada } from '@/componentes/Formulario';
 import { Icono } from '@/componentes/Icono';
+import { Respaldo } from './ajustes/Respaldo';
 
 const DESCRIPCION_NIVEL: Record<Nivel, string> = {
   bachillerato: 'Básica secundaria y media. Incluye preparación Saber 11.',
@@ -160,6 +161,14 @@ export function Bienvenida({ primeraVez }: { primeraVez: boolean }) {
                   >
                     Probar con datos de ejemplo
                   </button>
+                </div>
+              )}
+              {primeraVez && (
+                <div className="mt-3 rounded-2xl bg-superficie-2/70 p-4">
+                  <p className="mb-3 text-sm text-tinta-suave">
+                    ¿Ya usabas Zaviro en otro equipo? Restaura tu respaldo en JSON.
+                  </p>
+                  <Respaldo soloImportar />
                 </div>
               )}
             </>

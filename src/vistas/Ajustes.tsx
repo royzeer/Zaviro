@@ -5,6 +5,7 @@ import { useConsulta } from '@/db/useConsulta';
 import { useApp, type PreferenciaTema } from '@/estado/app';
 import { Icono } from '@/componentes/Icono';
 import { Tarjeta } from '@/componentes/Tarjeta';
+import { Respaldo } from './ajustes/Respaldo';
 
 const OPCIONES_TEMA: { valor: PreferenciaTema; texto: string }[] = [
   { valor: 'claro', texto: 'Claro' },
@@ -20,7 +21,9 @@ export function Ajustes() {
 
   async function cargarEjemplos() {
     await cargarDatosEjemplo();
-    setMensaje('Se cargaron dos perfiles de ejemplo: un tecnólogo y una ingeniería en paralelo.');
+    setMensaje(
+      'Se cargaron cuatro perfiles de ejemplo: tecnólogo, ingeniería, bachillerato y maestría.',
+    );
   }
 
   async function borrarEjemplos() {
@@ -29,7 +32,7 @@ export function Ajustes() {
   }
 
   return (
-    <div className="grid gap-5 md:grid-cols-2">
+    <div className="grid items-start gap-5 md:grid-cols-2">
       <Tarjeta titulo="Apariencia" icono="sol">
         <fieldset>
           <legend className="etiqueta">Tema</legend>
@@ -57,6 +60,8 @@ export function Ajustes() {
           </div>
         </fieldset>
       </Tarjeta>
+
+      <Respaldo />
 
       <Tarjeta titulo="Datos de ejemplo" icono="papelera">
         <p className="mb-4 text-sm text-tinta-suave">
