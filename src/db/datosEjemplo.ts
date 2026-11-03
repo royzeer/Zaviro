@@ -1,7 +1,8 @@
 import { addDays, subDays } from 'date-fns';
 import { db, type ZaviroDB } from './db';
-import type { Apunte, Materia, Tema } from './esquemas';
-import { crearPerfil, cortesIniciales } from './operaciones';
+import type { Apunte, ConceptoRaiz, ErrorRegistrado, Materia, Tema } from './esquemas';
+import type { Nivel, TipoError } from '@/dominio/catalogo';
+import { crearPerfil, cortesIniciales, registrarError } from './operaciones';
 import { guardar, nuevoId } from './repositorio';
 import { modulosSugeridos, reglasSugeridas } from '@/dominio/niveles';
 
@@ -191,7 +192,117 @@ export async function cargarDatosEjemplo(base: ZaviroDB = db) {
   ];
   for (const a of apuntes) await guardar('apuntes', a, base);
 
-  return { perfiles: [tecnologo, pregrado], materias, temas, apuntes };
+  const concepto = (nombre: string, nivelOrigen: Nivel, descripcion = ''): ConceptoRaiz => ({
+    id: nuevoId(),
+    nombre,
+    descripcion,
+    nivelOrigen,
+    temaIds: [],
+    esEjemplo: true,
+  });
+  const despejes = concepto(
+    'Despejes',
+    'bachillerato',
+    'Aislar una variable en una ecuación sin cambiar su sentido.',
+  );
+  const fracciones = concepto('Fracciones algebraicas', 'bachillerato');
+  const trigonometria = concepto('Razones trigonométricas', 'bachillerato');
+  const vectores = concepto('Descomposición de vectores', 'bachillerato');
+  const cadena = concepto('Regla de la cadena', 'profesional');
+  const lecturaCritica = concepto('Comprensión lectora', 'bachillerato');
+  const logica = concepto('Lógica condicional', 'tecnologo');
+  const conceptos = [despejes, fracciones, trigonometria, vectores, cadena, lecturaCritica, logica];
+  for (const c of conceptos) await guardar('conceptosRaiz', c, base);
+
+  const errores: ErrorRegistrado[] = [];
+  const fallo = async (
+    materiaId: string,
+    temaIdx: number,
+    tipo: TipoError,
+    raices: ConceptoRaiz[],
+    dias: number,
+    resuelto = false,
+    enunciado = '',
+    miRespuesta = '',
+    solucionCorrecta = '',
+  ) => {
+    const e: ErrorRegistrado = {
+      id: nuevoId(),
+      materiaId,
+      temaId: temas[temaIdx]!.id,
+      tipo,
+      enunciado,
+      miRespuesta,
+      solucionCorrecta,
+      conceptoIds: raices.map((r) => r.id),
+      fecha: iso(subDays(hoy, dias)),
+      resuelto,
+      esEjemplo: true,
+    };
+    await registrarError(e, base);
+    errores.push(e);
+  };
+  await fallo(
+    calculo2.id,
+    2,
+    'procedimiento',
+    [fracciones, despejes],
+    2,
+    false,
+    '∫ 1/(x² − 1) dx',
+    'ln|x² − 1|',
+    '½ ln|(x − 1)/(x + 1)| + C',
+  );
+  await fallo(
+    calculo2.id,
+    0,
+    'calculo',
+    [cadena],
+    5,
+    false,
+    '∫ 2x·cos(x²) dx',
+    'sen(x²)·x²',
+    'sen(x²) + C',
+  );
+  await fallo(calculo2.id, 1, 'concepto', [despejes], 20, true);
+  await fallo(
+    estatica.id,
+    6,
+    'calculo',
+    [trigonometria, vectores],
+    1,
+    false,
+    'Momento de 50 N a 30° sobre una barra de 2 m',
+    '100 N·m',
+    '50 N·m (50 · sen 30° · 2)',
+  );
+  await fallo(estatica.id, 5, 'procedimiento', [despejes, vectores], 3);
+  await fallo(estatica.id, 4, 'descuido', [], 9, true);
+  await fallo(lectura.id, 8, 'lectura', [lecturaCritica], 4);
+  await fallo(programacion.id, 11, 'concepto', [logica], 6);
+  await fallo(programacion.id, 10, 'procedimiento', [logica, despejes], 30, true);
+
+  // Una tarjeta vencida para que se vea un tema "oxidado" en el árbol.
+  await guardar(
+    'tarjetas',
+    {
+      id: nuevoId(),
+      origenTipo: 'apunte',
+      origenId: apuntes[0]!.id,
+      temaId: temas[1]!.id,
+      frente: '¿Cómo se elige u en integración por partes?',
+      reverso:
+        'Con el orden LIATE: logarítmicas, inversas, algebraicas, trigonométricas, exponenciales.',
+      facilidad: 2.5,
+      intervalo: 3,
+      repeticiones: 1,
+      proximoRepaso: iso(subDays(hoy, 2)),
+      esEjemplo: true,
+    },
+    base,
+  );
+
+  return { perfiles: [tecnologo, pregrado], materias, temas, apuntes, conceptos, errores };
 }
 
 /** Indica si hay datos de ejemplo cargados. */

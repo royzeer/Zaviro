@@ -194,3 +194,53 @@ describe('datos de ejemplo', () => {
     expect(conteo.apuntes).toBe(1);
   });
 });
+
+describe('errores y conceptos raíz', () => {
+  it('registrar un error enlaza sus raíces con el tema', async () => {
+    const { registrarError, crearConcepto } = await import('./operaciones');
+    const p = await nuevo('profesional');
+    const { materia, tema } = await sembrarMateria(p.id);
+    const despejes = await crearConcepto({ nombre: 'Despejes', nivelOrigen: 'bachillerato' }, base);
+    await registrarError(
+      {
+        id: nuevoId(),
+        materiaId: materia.id,
+        temaId: tema.id,
+        tipo: 'procedimiento',
+        enunciado: '',
+        miRespuesta: '',
+        solucionCorrecta: '',
+        conceptoIds: [despejes.id],
+        fecha: ahoraIso(),
+        resuelto: false,
+      },
+      base,
+    );
+    expect((await base.conceptosRaiz.get(despejes.id))?.temaIds).toEqual([tema.id]);
+  });
+
+  it('no duplica conceptos con el mismo nombre', async () => {
+    const { crearConcepto } = await import('./operaciones');
+    const a = await crearConcepto({ nombre: 'Derivadas', nivelOrigen: 'profesional' }, base);
+    const b = await crearConcepto({ nombre: ' derivadas ', nivelOrigen: 'bachillerato' }, base);
+    expect(b.id).toBe(a.id);
+    expect(await base.conceptosRaiz.count()).toBe(1);
+  });
+
+  it('borrar un concepto lo quita de los errores', async () => {
+    const { borrarConcepto } = await import('./operaciones');
+    const p = await nuevo('profesional');
+    const { error, raiz } = await sembrarMateria(p.id);
+    await base.errores.update(error.id, { conceptoIds: [raiz.id] });
+    await borrarConcepto(raiz.id, base);
+    expect((await base.errores.get(error.id))?.conceptoIds).toEqual([]);
+  });
+
+  it('borrar un error borra sus tarjetas', async () => {
+    const { borrarError } = await import('./operaciones');
+    const p = await nuevo('profesional');
+    const { error } = await sembrarMateria(p.id);
+    await borrarError(error.id, base);
+    expect(await base.tarjetas.count()).toBe(0);
+  });
+});

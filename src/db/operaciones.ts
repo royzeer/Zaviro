@@ -1,5 +1,13 @@
 import { db, type ZaviroDB } from './db';
-import type { Apunte, Materia, PerfilAcademico, Reglas, Tema } from './esquemas';
+import type {
+  Apunte,
+  ConceptoRaiz,
+  ErrorRegistrado,
+  Materia,
+  PerfilAcademico,
+  Reglas,
+  Tema,
+} from './esquemas';
 import { ahoraIso, guardar, guardarAjuste, nuevoId, obtenerAjuste } from './repositorio';
 import type { Area, Modulo, Nivel } from '@/dominio/catalogo';
 
@@ -167,4 +175,58 @@ export async function apuntesDeMaterias(
   if (materiaIds.length === 0) return [];
   const lista = await base.apuntes.where('materiaId').anyOf(materiaIds).toArray();
   return lista.sort((a, b) => b.fecha.localeCompare(a.fecha));
+}
+
+/**
+ * Guarda un error y enlaza sus conceptos raíz con el tema, para que el árbol
+ * sepa qué raíces sostienen cada hoja.
+ */
+export async function registrarError(error: ErrorRegistrado, base: ZaviroDB = db) {
+  await base.transaction('rw', [base.errores, base.conceptosRaiz], async () => {
+    await guardar('errores', error, base);
+    for (const id of error.conceptoIds) {
+      const c = await base.conceptosRaiz.get(id);
+      if (c && !c.temaIds.includes(error.temaId)) {
+        await guardar('conceptosRaiz', { ...c, temaIds: [...c.temaIds, error.temaId] }, base);
+      }
+    }
+  });
+  return error;
+}
+
+export async function crearConcepto(
+  datos: Pick<ConceptoRaiz, 'nombre' | 'nivelOrigen'> &
+    Partial<Pick<ConceptoRaiz, 'descripcion' | 'temaIds'>>,
+  base: ZaviroDB = db,
+) {
+  const nombre = datos.nombre.trim();
+  const existente = await base.conceptosRaiz
+    .filter((c) => c.nombre.toLowerCase() === nombre.toLowerCase())
+    .first();
+  if (existente) return existente;
+  return guardar(
+    'conceptosRaiz',
+    { id: nuevoId(), descripcion: '', temaIds: [], ...datos, nombre },
+    base,
+  );
+}
+
+/** Borra un concepto raíz y lo quita de los errores que lo mencionaban. */
+export async function borrarConcepto(id: string, base: ZaviroDB = db) {
+  await base.transaction('rw', [base.conceptosRaiz, base.errores], async () => {
+    await base.errores
+      .where('conceptoIds')
+      .equals(id)
+      .modify((e) => {
+        e.conceptoIds = e.conceptoIds.filter((c) => c !== id);
+      });
+    await base.conceptosRaiz.delete(id);
+  });
+}
+
+export async function borrarError(id: string, base: ZaviroDB = db) {
+  await base.transaction('rw', [base.errores, base.tarjetas], async () => {
+    await borrarTarjetasDe('error', [id], base);
+    await base.errores.delete(id);
+  });
 }
