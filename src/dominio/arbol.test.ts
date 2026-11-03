@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { calcularArbol, MEDIDAS, profundidadRaiz, radioHoja, type EntradaArbol } from './arbol';
+import {
+  cajaEtiqueta,
+  calcularArbol,
+  MEDIDAS,
+  profundidadRaiz,
+  radioHoja,
+  ubicarEtiquetas,
+  type EntradaArbol,
+  type RaizArbol,
+} from './arbol';
 
 const entrada: EntradaArbol = {
   nivelPerfil: 'maestria',
@@ -69,5 +78,39 @@ describe('forma del árbol', () => {
 
   it('es determinista', () => {
     expect(calcularArbol(entrada)).toEqual(calcularArbol(entrada));
+  });
+
+  it('ubica las etiquetas de raíces vecinas sin que se pisen', () => {
+    const raiz = (id: string, x: number, y: number): RaizArbol => ({
+      id,
+      nombre: 'Descomposición de vectores',
+      nivelOrigen: 'bachillerato',
+      x,
+      y,
+      profundidad: 2,
+      temaIds: [],
+      etiquetaArriba: false,
+    });
+    const raices = [raiz('a', 300, 420), raiz('b', 360, 425)];
+    ubicarEtiquetas(raices, MEDIDAS);
+    expect(raices[0]!.etiquetaArriba).not.toBe(raices[1]!.etiquetaArriba);
+    const [c1, c2] = raices.map((r) => cajaEtiqueta(r, r.etiquetaArriba));
+    const seCruzan = c1!.x1 < c2!.x2 && c2!.x1 < c1!.x2 && c1!.y1 < c2!.y2 && c2!.y1 < c1!.y2;
+    expect(seCruzan).toBe(false);
+  });
+
+  it('una raíz pegada al suelo pone la etiqueta abajo para no salirse', () => {
+    const r: RaizArbol = {
+      id: 'a',
+      nombre: 'Despejes',
+      nivelOrigen: 'bachillerato',
+      x: 320,
+      y: MEDIDAS.suelo + 30,
+      profundidad: 2,
+      temaIds: [],
+      etiquetaArriba: true,
+    };
+    ubicarEtiquetas([r], MEDIDAS);
+    expect(r.etiquetaArriba).toBe(false);
   });
 });

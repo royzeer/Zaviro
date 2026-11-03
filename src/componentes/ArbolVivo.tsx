@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { hrefDe } from '@/app/enrutador';
-import { calcularArbol, curva, type EntradaArbol } from '@/dominio/arbol';
+import { calcularArbol, curva, textoEtiqueta, type EntradaArbol } from '@/dominio/arbol';
 import { esNivelAnterior, NOMBRE_NIVEL } from '@/dominio/catalogo';
 
 interface Props {
@@ -154,7 +154,7 @@ export function ArbolVivo({ entrada, fallan, oxidados }: Props) {
                 fill="rgb(var(--tinta))"
                 fillOpacity={on ? 1 : 0.75}
               >
-                {r.nombre.length > 20 ? `${r.nombre.slice(0, 19)}…` : r.nombre}
+                {textoEtiqueta(r.nombre)}
               </text>
             </g>
           );

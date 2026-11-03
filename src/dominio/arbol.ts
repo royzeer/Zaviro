@@ -177,16 +177,59 @@ export function calcularArbol(entrada: EntradaArbol, medidas: Medidas = MEDIDAS)
     y: Math.min(medidas.alto - margen, Math.max(medidas.suelo + 30, n.y ?? n.ty)),
     etiquetaArriba: false,
   }));
-  // Si dos raíces quedan cerca en la misma franja, alterna sus etiquetas arriba y abajo.
-  const ordenadas = [...raices].sort((a, b) => a.x - b.x);
-  for (let i = 1; i < ordenadas.length; i++) {
-    const previa = ordenadas[i - 1]!;
-    const actual = ordenadas[i]!;
-    if (actual.x - previa.x < 130 && Math.abs(actual.y - previa.y) < 40)
-      actual.etiquetaArriba = !previa.etiquetaArriba;
-  }
+  ubicarEtiquetas(raices, medidas);
 
   return { medidas, tronco: { x: cx, base: medidas.suelo, copa }, ramas, hojas, raices };
+}
+
+/** Texto que se muestra en la etiqueta de una raíz (se corta si es muy largo). */
+export function textoEtiqueta(nombre: string): string {
+  return nombre.length > 20 ? `${nombre.slice(0, 19)}…` : nombre;
+}
+
+interface Caja {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+/** Caja aproximada de la etiqueta de una raíz, arriba o abajo del nodo (fuente de 12,5 px). */
+export function cajaEtiqueta(r: { x: number; y: number; nombre: string }, arriba: boolean): Caja {
+  const ancho = textoEtiqueta(r.nombre).length * 7 + 6;
+  const base = arriba ? r.y - 13 : r.y + 22;
+  return { x1: r.x - ancho / 2, x2: r.x + ancho / 2, y1: base - 12, y2: base + 3 };
+}
+
+const solape = (a: Caja, b: Caja) =>
+  Math.max(0, Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1)) *
+  Math.max(0, Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1));
+
+/**
+ * Elige para cada etiqueta si va arriba o abajo de su nodo: recorre las raíces de izquierda a
+ * derecha y toma la posición que menos choca con las etiquetas ya puestas, con los nodos y con
+ * los bordes del dibujo. Modifica `etiquetaArriba` en el lugar.
+ */
+export function ubicarEtiquetas(raices: RaizArbol[], medidas: Medidas) {
+  const puestas: Caja[] = [];
+  const nodos: Caja[] = raices.map((r) => ({ x1: r.x - 8, x2: r.x + 8, y1: r.y - 8, y2: r.y + 8 }));
+  const fuera = (c: Caja) =>
+    (Math.max(0, -c.x1) + Math.max(0, c.x2 - medidas.ancho)) * 15 +
+    (Math.max(0, medidas.suelo + 2 - c.y1) + Math.max(0, c.y2 - medidas.alto)) * 200;
+  for (const r of [...raices].sort((a, b) => a.x - b.x)) {
+    const costo = (arriba: boolean) => {
+      const c = cajaEtiqueta(r, arriba);
+      return (
+        puestas.reduce((s, p) => s + solape(c, p), 0) +
+        nodos.reduce((s, n) => s + solape(c, n), 0) +
+        fuera(c)
+      );
+    };
+    const abajo = costo(false);
+    const arriba = costo(true);
+    r.etiquetaArriba = arriba < abajo;
+    puestas.push(cajaEtiqueta(r, r.etiquetaArriba));
+  }
 }
 
 /** Camino SVG curvo entre dos puntos. */
