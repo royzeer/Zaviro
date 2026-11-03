@@ -176,3 +176,21 @@ describe('cortes iniciales de una materia', () => {
     expect(cortesIniciales(reglasSugeridas('doctorado'))).toEqual([]);
   });
 });
+
+describe('datos de ejemplo', () => {
+  it('se cargan válidos y se borran sin tocar los datos reales', async () => {
+    const { cargarDatosEjemplo } = await import('./datosEjemplo');
+    const { borrarDatosEjemplo, contarTodo } = await import('./repositorio');
+    const real = await nuevo('maestria');
+    await sembrarMateria(real.id);
+    const ejemplo = await cargarDatosEjemplo(base);
+    expect(ejemplo.perfiles).toHaveLength(2);
+    expect((await contarTodo(base)).materias).toBe(7);
+    await borrarDatosEjemplo(base);
+    const conteo = await contarTodo(base);
+    expect(conteo.perfiles).toBe(1);
+    expect(conteo.materias).toBe(1);
+    expect(conteo.temas).toBe(1);
+    expect(conteo.apuntes).toBe(1);
+  });
+});
