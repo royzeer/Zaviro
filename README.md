@@ -6,16 +6,16 @@ La app es inteligente por lógica propia, no por IA. Cruza los errores de todas 
 
 ## Estado
 
-| Fase | Contenido                                                                           | Estado    |
-| ---- | ----------------------------------------------------------------------------------- | --------- |
-| 0    | Estructura, sistema de diseño, rutas y base de datos local                          | Lista     |
-| 1    | Perfiles académicos y reglas por nivel, materias, cortes, créditos, temas y apuntes | Lista     |
-| 2    | Registro de errores, conceptos raíz y árbol vivo                                    | Lista     |
-| 3    | Repetición espaciada y pantalla de repaso                                           | Lista     |
-| 4    | Calculadora de notas, promedio ponderado, rendimiento de estudio y plan             | Lista     |
-| 5    | Módulos por nivel: Saber 11, Trabajo de grado, Lecturas, Saber Pro / TyT            | Lista     |
-| 6    | Ejemplos resueltos por área con diagrama de cuerpo libre                            | Lista     |
-| 7    | Respaldo JSON, PWA y pulido                                                         | Pendiente |
+| Fase | Contenido                                                                           | Estado |
+| ---- | ----------------------------------------------------------------------------------- | ------ |
+| 0    | Estructura, sistema de diseño, rutas y base de datos local                          | Lista  |
+| 1    | Perfiles académicos y reglas por nivel, materias, cortes, créditos, temas y apuntes | Lista  |
+| 2    | Registro de errores, conceptos raíz y árbol vivo                                    | Lista  |
+| 3    | Repetición espaciada y pantalla de repaso                                           | Lista  |
+| 4    | Calculadora de notas, promedio ponderado, rendimiento de estudio y plan             | Lista  |
+| 5    | Módulos por nivel: Saber 11, Trabajo de grado, Lecturas, Saber Pro / TyT            | Lista  |
+| 6    | Ejemplos resueltos por área con diagrama de cuerpo libre                            | Lista  |
+| 7    | Respaldo JSON, PWA y pulido                                                         | Lista  |
 
 ## Requisitos
 
@@ -115,6 +115,17 @@ Se pueden tener varios perfiles a la vez (por ejemplo, un tecnólogo y una carre
 ## Datos y privacidad
 
 Toda la información vive en IndexedDB del navegador. Nada se envía a ningún servidor. Los datos de ejemplo se marcan con `esEjemplo` y se pueden borrar desde Ajustes con el botón "Borrar datos de ejemplo", sin afectar los datos reales.
+
+### Respaldo
+
+- En Ajustes, "Descargar respaldo" guarda un archivo `zaviro-respaldo-AAAA-MM-DD.json` con todas las tablas y los ajustes. La app recuerda la fecha del último respaldo.
+- "Importar respaldo" valida cada registro con los mismos esquemas Zod de la app. Si algún registro no es válido, no se importa nada y se muestra cuál falla y por qué. Se puede combinar con lo que ya hay (gana el registro del respaldo si el id coincide) o reemplazar todo.
+- En la pantalla de bienvenida también se puede restaurar un respaldo, para pasar los datos a un equipo nuevo.
+- Ajustes permite pedir almacenamiento persistente para que el navegador no borre los datos cuando le falta espacio. Ver `src/db/respaldo.ts`.
+
+### Instalación y uso sin internet
+
+Zaviro es una PWA: se puede instalar desde el navegador (íconos de 192 y 512 px, ícono adaptable para Android y ícono para iOS) y funciona sin conexión, porque el service worker guarda en caché la app completa, incluida la fuente. Tiene accesos directos a Repasar, Errores y Notas y plan. Las pantallas menos usadas y las librerías se cargan en archivos separados.
 
 ## Diseño
 
