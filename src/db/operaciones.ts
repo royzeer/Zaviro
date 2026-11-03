@@ -147,8 +147,20 @@ export async function borrarPerfil(perfilId: string, base: ZaviroDB = db) {
   for (const m of materiaIds) await borrarMateria(m, base);
   await base.transaction(
     'rw',
-    [base.perfiles, base.simulacros, base.hitos, base.lecturas, base.ajustes],
+    [
+      base.perfiles,
+      base.simulacros,
+      base.hitos,
+      base.lecturas,
+      base.modulosSaberPro,
+      base.practicasSaberPro,
+      base.bitacora,
+      base.ajustes,
+    ],
     async () => {
+      await base.modulosSaberPro.where('perfilId').equals(perfilId).delete();
+      await base.practicasSaberPro.where('perfilId').equals(perfilId).delete();
+      await base.bitacora.where('perfilId').equals(perfilId).delete();
       await base.simulacros.where('perfilId').equals(perfilId).delete();
       await base.hitos.where('perfilId').equals(perfilId).delete();
       await base.lecturas.where('perfilId').equals(perfilId).delete();

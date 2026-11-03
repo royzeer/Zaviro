@@ -7,6 +7,9 @@ import {
   errorEsquema,
   hitoEsquema,
   lecturaEsquema,
+  moduloSaberProEsquema,
+  practicaSaberProEsquema,
+  entradaBitacoraEsquema,
   materiaEsquema,
   perfilEsquema,
   repasoEsquema,
@@ -31,6 +34,9 @@ export const ESQUEMA_POR_TABLA = {
   simulacros: simulacroSaber11Esquema,
   hitos: hitoEsquema,
   lecturas: lecturaEsquema,
+  modulosSaberPro: moduloSaberProEsquema,
+  practicasSaberPro: practicaSaberProEsquema,
+  bitacora: entradaBitacoraEsquema,
 } satisfies Record<TablaDatos, z.ZodTypeAny>;
 
 export type EntidadDe<T extends TablaDatos> = z.infer<(typeof ESQUEMA_POR_TABLA)[T]>;

@@ -241,6 +241,39 @@ export const lecturaEsquema = z.object({
   esEjemplo,
 });
 
+export const moduloSaberProEsquema = z.object({
+  id,
+  perfilId: id,
+  nombre: z.string().min(1),
+  tipo: z.enum(['generico', 'especifico']),
+  esEjemplo,
+});
+
+export const practicaSaberProEsquema = z
+  .object({
+    id,
+    perfilId: id,
+    moduloId: id,
+    fecha: fechaIso,
+    aciertos: z.number().int().min(0),
+    preguntas: z.number().int().min(1),
+    esEjemplo,
+  })
+  .refine((p) => p.aciertos <= p.preguntas, {
+    message: 'Los aciertos no pueden ser más que las preguntas.',
+    path: ['aciertos'],
+  });
+
+export const entradaBitacoraEsquema = z.object({
+  id,
+  perfilId: id,
+  fecha: fechaIso,
+  texto: z.string().min(1),
+  hitoId: id.optional(),
+  horas: z.number().min(0).max(24).optional(),
+  esEjemplo,
+});
+
 export const ajusteEsquema = z.object({
   clave: z.string().min(1),
   valor: z.unknown(),
@@ -261,4 +294,7 @@ export type EjemploResuelto = z.infer<typeof ejemploResueltoEsquema>;
 export type SimulacroSaber11 = z.infer<typeof simulacroSaber11Esquema>;
 export type HitoTrabajoGrado = z.infer<typeof hitoEsquema>;
 export type Lectura = z.infer<typeof lecturaEsquema>;
+export type ModuloSaberPro = z.infer<typeof moduloSaberProEsquema>;
+export type PracticaSaberPro = z.infer<typeof practicaSaberProEsquema>;
+export type EntradaBitacora = z.infer<typeof entradaBitacoraEsquema>;
 export type Ajuste = z.infer<typeof ajusteEsquema>;

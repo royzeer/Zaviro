@@ -9,6 +9,9 @@ import type {
   SesionEstudio,
   HitoTrabajoGrado,
   Lectura,
+  ModuloSaberPro,
+  PracticaSaberPro,
+  EntradaBitacora,
   Materia,
   PerfilAcademico,
   SimulacroSaber11,
@@ -35,6 +38,9 @@ export class ZaviroDB extends Dexie {
   simulacros!: EntityTable<SimulacroSaber11, 'id'>;
   hitos!: EntityTable<HitoTrabajoGrado, 'id'>;
   lecturas!: EntityTable<Lectura, 'id'>;
+  modulosSaberPro!: EntityTable<ModuloSaberPro, 'id'>;
+  practicasSaberPro!: EntityTable<PracticaSaberPro, 'id'>;
+  bitacora!: EntityTable<EntradaBitacora, 'id'>;
   ajustes!: EntityTable<Ajuste, 'clave'>;
 
   constructor(nombre = 'zaviro') {
@@ -61,6 +67,12 @@ export class ZaviroDB extends Dexie {
     this.version(3).stores({
       sesiones: 'id, temaId, fecha',
     });
+    // v4: Saber Pro / TyT y bitácora de investigación.
+    this.version(4).stores({
+      modulosSaberPro: 'id, perfilId',
+      practicasSaberPro: 'id, perfilId, moduloId, fecha',
+      bitacora: 'id, perfilId, fecha',
+    });
   }
 }
 
@@ -81,6 +93,9 @@ export const TABLAS_DATOS = [
   'simulacros',
   'hitos',
   'lecturas',
+  'modulosSaberPro',
+  'practicasSaberPro',
+  'bitacora',
 ] as const;
 
 export type TablaDatos = (typeof TABLAS_DATOS)[number];
