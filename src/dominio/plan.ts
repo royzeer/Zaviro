@@ -3,7 +3,10 @@ import type { RendimientoTema } from './rendimiento';
 
 /**
  * Plan de estudio. Reparte las horas pendientes de cada tema entre hoy y la fecha de su examen,
- * priorizando el mayor rendimiento (puntos por hora), y reserva primero el tiempo de los repasos.
+ * priorizando el mayor rendimiento (puntos por hora) ajustado por urgencia, y reserva primero el
+ * tiempo de los repasos. La urgencia de una materia es lo que le falta dividido entre las horas que
+ * le quedarían antes del examen si hoy no la estudias (con tope 3): una materia apretada sube en la
+ * lista aunque rinda menos por hora.
  * El plan se calcula siempre desde hoy con lo que falta: si te atrasas, se reajusta solo.
  */
 
@@ -34,6 +37,8 @@ export interface BloquePlan {
   temaId: string;
   materiaId: string;
   horas: number;
+  /** Bloque que ya se marcó como hecho hoy. */
+  hecho?: boolean;
 }
 
 export interface DiaPlan {
@@ -59,10 +64,20 @@ export interface Plan {
 
 const clave = (d: Date) => format(d, 'yyyy-MM-dd');
 
+/** Horas de estudio disponibles desde `desde` (incluido) hasta `hasta` (excluido). */
+export function capacidadEntre(desde: Date, hasta: Date, c: ConfigPlan): number {
+  let horas = 0;
+  for (let d = startOfDay(desde); d < hasta; d = addDays(d, 1))
+    if (!c.diasLibres.includes(d.getDay())) horas += c.horasPorDia;
+  return horas;
+}
+
 export function generarPlan(params: {
   rendimiento: RendimientoTema[];
   /** Horas ya estudiadas por tema (se descuentan de lo pendiente). */
   horasEstudiadas?: Map<string, number>;
+  /** Horas ya hechas hoy por tema: ocupan la capacidad de hoy y se muestran como hechas. */
+  hechoHoy?: Map<string, number>;
   /** Tarjetas que vencen cada día (aaaa-mm-dd). Las vencidas antes de hoy cuentan para hoy. */
   repasosPorDia?: Map<string, number>;
   hoy?: Date;
@@ -108,20 +123,44 @@ export function generarPlan(params: {
     let capacidad = libre ? 0 : Math.max(0, c.horasPorDia - minutosRepaso / 60);
     const bloques: BloquePlan[] = [];
     const hoyPorTema = new Map<string, number>();
+    if (i === 0)
+      for (const [temaId, horas] of params.hechoHoy ?? []) {
+        const r = params.rendimiento.find((x) => x.tema.id === temaId);
+        if (!r || horas <= 0) continue;
+        bloques.push({ temaId, materiaId: r.materia.id, horas, hecho: true });
+        hoyPorTema.set(temaId, horas);
+        capacidad = Math.max(0, Math.round((capacidad - horas) * 100) / 100);
+      }
 
     // Candidatos: temas con horas pendientes cuyo examen todavía no ha pasado (se estudia antes del día del examen).
-    const candidatos = params.rendimiento
-      .filter((r) => {
-        const e = examen(r);
-        return (pendientes.get(r.tema.id) ?? 0) > 0 && (!e || dia < e);
-      })
-      .sort((a, b) => {
-        const d = b.puntosPorHora - a.puntosPorHora;
-        if (Math.abs(d) > 1e-9) return d;
-        const ea = examen(a)?.getTime() ?? Infinity;
-        const eb = examen(b)?.getTime() ?? Infinity;
-        return ea - eb;
-      });
+    const vivos = params.rendimiento.filter((r) => {
+      const e = examen(r);
+      return (pendientes.get(r.tema.id) ?? 0) > 0 && (!e || dia < e);
+    });
+    const urgencia = new Map<string, number>();
+    for (const r of vivos) {
+      if (urgencia.has(r.materia.id)) continue;
+      const e = examen(r);
+      if (!e) {
+        urgencia.set(r.materia.id, 0);
+        continue;
+      }
+      const falta = vivos
+        .filter((o) => o.materia.id === r.materia.id)
+        .reduce((s, o) => s + (pendientes.get(o.tema.id) ?? 0), 0);
+      // Horas que quedarían si hoy no se estudia esta materia.
+      const disponibles = capacidadEntre(addDays(dia, 1), e, c);
+      urgencia.set(r.materia.id, disponibles > 0 ? Math.min(3, falta / disponibles) : 3);
+    }
+    const puntaje = (r: RendimientoTema) =>
+      r.puntosPorHora * (1 + (urgencia.get(r.materia.id) ?? 0));
+    const candidatos = vivos.sort((a, b) => {
+      const d = puntaje(b) - puntaje(a);
+      if (Math.abs(d) > 1e-9) return d;
+      const ea = examen(a)?.getTime() ?? Infinity;
+      const eb = examen(b)?.getTime() ?? Infinity;
+      return ea - eb;
+    });
 
     for (const r of candidatos) {
       while (capacidad >= c.bloque - 1e-9) {
@@ -134,7 +173,7 @@ export function generarPlan(params: {
         pendientes.set(r.tema.id, Math.round((falta - asignado) * 100) / 100);
         hoyPorTema.set(r.tema.id, usado + asignado);
         capacidad = Math.round((capacidad - asignado) * 100) / 100;
-        const existente = bloques.find((b) => b.temaId === r.tema.id);
+        const existente = bloques.find((b) => b.temaId === r.tema.id && !b.hecho);
         if (existente) existente.horas = Math.round((existente.horas + asignado) * 100) / 100;
         else bloques.push({ temaId: r.tema.id, materiaId: r.materia.id, horas: asignado });
       }
@@ -158,9 +197,8 @@ export function generarPlan(params: {
     if (falta > 0)
       faltantesPorMateria.set(r.materia.id, (faltantesPorMateria.get(r.materia.id) ?? 0) + falta);
   }
-  const faltantes = [...faltantesPorMateria].map(([materiaId, horas]) => ({
-    materiaId,
-    horas: Math.round(horas * 10) / 10,
-  }));
+  const faltantes = [...faltantesPorMateria]
+    .map(([materiaId, horas]) => ({ materiaId, horas: Math.round(horas * 10) / 10 }))
+    .filter((f) => f.horas > 0);
   return { dias, faltantes };
 }

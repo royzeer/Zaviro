@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Materia, Tema } from '@/db/esquemas';
-import { generarPlan } from './plan';
+import { CONFIG_PLAN, capacidadEntre, generarPlan } from './plan';
 import type { RendimientoTema } from './rendimiento';
 
 const hoy = new Date('2026-11-03T08:00:00');
@@ -40,6 +40,28 @@ describe('plan de estudio', () => {
       config: { horasPorDia: 1 },
     });
     expect(plan.dias[0]!.bloques[0]!.temaId).toBe('alto');
+  });
+
+  it('sube una materia apretada aunque rinda menos por hora', () => {
+    // m1 rinde más pero su examen es en 14 días con poco por estudiar;
+    // m2 tiene 9 h pendientes y solo 10 h disponibles antes de su examen.
+    const plan = generarPlan({
+      rendimiento: [item('holgado', 'm1', 3, 4, 14), item('apretado', 'm2', 2, 9, 5)],
+      hoy,
+      config: { horasPorDia: 2 },
+    });
+    expect(plan.dias[0]!.bloques[0]!.temaId).toBe('apretado');
+    expect(horasDe(plan, 'apretado')).toBeCloseTo(9);
+    expect(plan.faltantes).toEqual([]);
+  });
+
+  it('calcula las horas disponibles antes de un examen sin contar días libres', () => {
+    const lunes = new Date('2026-11-02T00:00:00');
+    const domingo = new Date('2026-11-08T00:00:00');
+    expect(capacidadEntre(lunes, domingo, { ...CONFIG_PLAN, horasPorDia: 2 })).toBe(12);
+    expect(
+      capacidadEntre(lunes, domingo, { ...CONFIG_PLAN, horasPorDia: 2, diasLibres: [6] }),
+    ).toBe(10);
   });
 
   it('no se pasa de las horas disponibles por día', () => {
@@ -90,6 +112,19 @@ describe('plan de estudio', () => {
     const domingo = plan.dias.find((d) => d.fecha === '2026-11-08')!;
     expect(domingo.libre).toBe(true);
     expect(domingo.bloques).toEqual([]);
+  });
+
+  it('lo hecho hoy ocupa la capacidad de hoy y se marca como hecho', () => {
+    const plan = generarPlan({
+      rendimiento: [item('a', 'm1', 5, 6, 10), item('b', 'm1', 4, 6, 10)],
+      horasEstudiadas: new Map([['a', 1.5]]),
+      hechoHoy: new Map([['a', 1.5]]),
+      hoy,
+      config: { horasPorDia: 2 },
+    });
+    const bloques = plan.dias[0]!.bloques;
+    expect(bloques[0]).toMatchObject({ temaId: 'a', horas: 1.5, hecho: true });
+    expect(bloques.filter((b) => !b.hecho).reduce((s, b) => s + b.horas, 0)).toBeCloseTo(0.5);
   });
 
   it('descuenta lo ya estudiado', () => {
