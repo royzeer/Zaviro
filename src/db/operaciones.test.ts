@@ -184,10 +184,24 @@ describe('datos de ejemplo', () => {
     const real = await nuevo('maestria');
     await sembrarMateria(real.id);
     const ejemplo = await cargarDatosEjemplo(base);
-    expect(ejemplo.perfiles).toHaveLength(2);
-    expect((await contarTodo(base)).materias).toBe(7);
+    expect(ejemplo.perfiles.map((p) => p.nivel)).toEqual([
+      'tecnologo',
+      'profesional',
+      'bachillerato',
+      'maestria',
+    ]);
+    const cargado = await contarTodo(base);
+    expect(cargado.materias).toBe(10);
+    expect(cargado.simulacros).toBe(4);
+    expect(cargado.hitos).toBe(5);
+    expect(cargado.bitacora).toBe(4);
+    expect(cargado.practicasSaberPro).toBeGreaterThan(0);
+    // Al terminar queda activo el perfil de pregrado.
+    expect((await perfilActivo(base))?.nivel).toBe('profesional');
     await borrarDatosEjemplo(base);
     const conteo = await contarTodo(base);
+    for (const t of ['simulacros', 'hitos', 'lecturas', 'bitacora', 'modulosSaberPro'] as const)
+      expect(conteo[t]).toBe(0);
     expect(conteo.perfiles).toBe(1);
     expect(conteo.materias).toBe(1);
     expect(conteo.temas).toBe(1);

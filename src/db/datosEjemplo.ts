@@ -2,7 +2,14 @@ import { addDays, subDays } from 'date-fns';
 import { db, type ZaviroDB } from './db';
 import type { Apunte, ConceptoRaiz, ErrorRegistrado, Materia, Tema } from './esquemas';
 import type { Nivel, TipoError } from '@/dominio/catalogo';
-import { crearPerfil, cortesIniciales, recalcularDominios, registrarError } from './operaciones';
+import {
+  activarPerfil,
+  crearPerfil,
+  cortesIniciales,
+  recalcularDominios,
+  registrarError,
+} from './operaciones';
+import { cargarModulosEjemplo } from './datosEjemploModulos';
 import type { Calificacion } from '@/dominio/repaso';
 import { guardar, nuevoId } from './repositorio';
 import { modulosSugeridos, reglasSugeridas } from '@/dominio/niveles';
@@ -22,7 +29,7 @@ export async function cargarDatosEjemplo(base: ZaviroDB = db) {
       institucion: 'Instituto de ejemplo',
       programa: 'Tecnología en análisis y desarrollo de software',
       reglas: reglasSugeridas('tecnologo'),
-      modulosActivos: modulosSugeridos('tecnologo'),
+      modulosActivos: [...modulosSugeridos('tecnologo'), 'saberPro'],
       esEjemplo: true,
     },
     base,
@@ -345,8 +352,18 @@ export async function cargarDatosEjemplo(base: ZaviroDB = db) {
     base,
   );
 
+  const { colegio, maestria } = await cargarModulosEjemplo(hoy, tecnologo.id, base);
+  // El perfil de pregrado queda activo al terminar.
+  await activarPerfil(pregrado.id, base);
   await recalcularDominios(hoy, base);
-  return { perfiles: [tecnologo, pregrado], materias, temas, apuntes, conceptos, errores };
+  return {
+    perfiles: [tecnologo, pregrado, colegio, maestria],
+    materias,
+    temas,
+    apuntes,
+    conceptos,
+    errores,
+  };
 }
 
 /** Indica si hay datos de ejemplo cargados. */
