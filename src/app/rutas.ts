@@ -110,7 +110,7 @@ export const RUTAS: DefinicionRuta[] = [
   {
     ruta: '/ajustes',
     titulo: 'Ajustes',
-    descripcion: 'Tema, perfiles, respaldo y datos de ejemplo.',
+    descripcion: 'Cuenta, tema, respaldo y datos de ejemplo.',
     icono: 'ajustes',
     grupo: 'sistema',
   },

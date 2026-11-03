@@ -5,6 +5,8 @@ import { useConsulta } from '@/db/useConsulta';
 import { useApp, type PreferenciaTema } from '@/estado/app';
 import { Icono } from '@/componentes/Icono';
 import { Tarjeta } from '@/componentes/Tarjeta';
+import { useSesion } from '@/estado/sesion';
+import { Cuenta } from './ajustes/Cuenta';
 import { Respaldo } from './ajustes/Respaldo';
 
 const OPCIONES_TEMA: { valor: PreferenciaTema; texto: string }[] = [
@@ -18,6 +20,7 @@ export function Ajustes() {
   const setTema = useApp((s) => s.setTema);
   const [mensaje, setMensaje] = useState('');
   const hayEjemplo = useConsulta(() => hayDatosEjemplo());
+  const usuario = useSesion((s) => s.usuario);
 
   async function cargarEjemplos() {
     await cargarDatosEjemplo();
@@ -33,6 +36,8 @@ export function Ajustes() {
 
   return (
     <div className="grid items-start gap-5 md:grid-cols-2">
+      {usuario && <Cuenta usuario={usuario} />}
+
       <Tarjeta titulo="Apariencia" icono="sol">
         <fieldset>
           <legend className="etiqueta">Tema</legend>
@@ -65,8 +70,8 @@ export function Ajustes() {
 
       <Tarjeta titulo="Datos de ejemplo" icono="papelera">
         <p className="mb-4 text-sm text-tinta-suave">
-          Todo lo que guardas vive solo en este dispositivo. Los datos de ejemplo sirven para probar
-          la app y puedes quitarlos cuando quieras sin tocar tus datos reales.
+          Los datos de ejemplo sirven para probar la app y puedes quitarlos cuando quieras sin tocar
+          tus datos reales.
         </p>
         <div className="flex flex-wrap gap-2">
           {hayEjemplo ? (

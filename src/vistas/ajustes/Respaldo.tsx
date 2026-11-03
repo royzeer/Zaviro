@@ -120,8 +120,8 @@ export function Respaldo({ soloImportar = false }: { soloImportar?: boolean }) {
     <>
       {!soloImportar && (
         <p className="mb-4 text-sm text-tinta-suave">
-          Tus datos viven solo en este dispositivo. Descarga un respaldo en JSON de vez en cuando, y
-          úsalo para pasar tus datos a otro equipo o recuperarlos si borras el navegador.
+          Tus datos se guardan en tu cuenta. Si además quieres una copia propia, descarga un
+          respaldo en JSON; también sirve para traer datos de otra cuenta.
         </p>
       )}
       <div className="flex flex-wrap items-center gap-2">
