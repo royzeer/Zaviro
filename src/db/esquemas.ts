@@ -113,6 +113,8 @@ export const materiaEsquema = z.object({
   prerrequisitos: z.array(id).optional(),
   periodoAcademico: z.string().optional(),
   estado: z.enum(ESTADOS_MATERIA).optional(),
+  /** Meta propia de nota final (opcional, para la calculadora). */
+  meta: nota.optional(),
   /** Nota final registrada a mano cuando la materia ya terminó (para el promedio acumulado). */
   notaFinal: nota.optional(),
   esEjemplo,
@@ -184,6 +186,15 @@ export const repasoEsquema = z.object({
   esEjemplo,
 });
 
+/** Sesión de estudio marcada como hecha desde el plan. */
+export const sesionEsquema = z.object({
+  id,
+  temaId: id,
+  fecha: fechaIso,
+  horas: z.number().positive().max(24),
+  esEjemplo,
+});
+
 export const ejemploResueltoEsquema = z.object({
   id,
   temaId: id,
@@ -245,6 +256,7 @@ export type Apunte = z.infer<typeof apunteEsquema>;
 export type ErrorRegistrado = z.infer<typeof errorEsquema>;
 export type TarjetaRepaso = z.infer<typeof tarjetaEsquema>;
 export type Repaso = z.infer<typeof repasoEsquema>;
+export type SesionEstudio = z.infer<typeof sesionEsquema>;
 export type EjemploResuelto = z.infer<typeof ejemploResueltoEsquema>;
 export type SimulacroSaber11 = z.infer<typeof simulacroSaber11Esquema>;
 export type HitoTrabajoGrado = z.infer<typeof hitoEsquema>;

@@ -6,6 +6,7 @@ import type {
   EjemploResuelto,
   ErrorRegistrado,
   Repaso,
+  SesionEstudio,
   HitoTrabajoGrado,
   Lectura,
   Materia,
@@ -29,6 +30,7 @@ export class ZaviroDB extends Dexie {
   errores!: EntityTable<ErrorRegistrado, 'id'>;
   tarjetas!: EntityTable<TarjetaRepaso, 'id'>;
   repasos!: EntityTable<Repaso, 'id'>;
+  sesiones!: EntityTable<SesionEstudio, 'id'>;
   ejemplos!: EntityTable<EjemploResuelto, 'id'>;
   simulacros!: EntityTable<SimulacroSaber11, 'id'>;
   hitos!: EntityTable<HitoTrabajoGrado, 'id'>;
@@ -55,6 +57,10 @@ export class ZaviroDB extends Dexie {
     this.version(2).stores({
       repasos: 'id, tarjetaId, temaId, fecha',
     });
+    // v3: sesiones de estudio hechas desde el plan.
+    this.version(3).stores({
+      sesiones: 'id, temaId, fecha',
+    });
   }
 }
 
@@ -70,6 +76,7 @@ export const TABLAS_DATOS = [
   'errores',
   'tarjetas',
   'repasos',
+  'sesiones',
   'ejemplos',
   'simulacros',
   'hitos',

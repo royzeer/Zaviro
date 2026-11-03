@@ -58,6 +58,7 @@ export async function borrarMateria(materiaId: string, base: ZaviroDB = db) {
       base.errores,
       base.tarjetas,
       base.repasos,
+      base.sesiones,
       base.ejemplos,
       base.conceptosRaiz,
     ],
@@ -112,6 +113,7 @@ async function borrarTemaInterno(temaId: string, base: ZaviroDB) {
   await base.errores.bulkDelete(errorIds);
   await base.tarjetas.where('temaId').equals(temaId).delete();
   await base.repasos.where('temaId').equals(temaId).delete();
+  await base.sesiones.where('temaId').equals(temaId).delete();
   await base.conceptosRaiz
     .where('temaIds')
     .equals(temaId)
@@ -131,6 +133,7 @@ export async function borrarTema(temaId: string, base: ZaviroDB = db) {
       base.errores,
       base.tarjetas,
       base.repasos,
+      base.sesiones,
       base.ejemplos,
       base.conceptosRaiz,
     ],
