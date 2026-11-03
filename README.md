@@ -9,11 +9,11 @@ La app es inteligente por lógica propia, no por IA. Cruza los errores de todas 
 | Fase | Contenido                                                                           | Estado    |
 | ---- | ----------------------------------------------------------------------------------- | --------- |
 | 0    | Estructura, sistema de diseño, rutas y base de datos local                          | Lista     |
-| 1    | Perfiles académicos y reglas por nivel, materias, cortes, créditos, temas y apuntes | Pendiente |
-| 2    | Registro de errores, conceptos raíz y árbol vivo                                    | Pendiente |
-| 3    | Repetición espaciada y pantalla de repaso                                           | Pendiente |
+| 1    | Perfiles académicos y reglas por nivel, materias, cortes, créditos, temas y apuntes | Lista     |
+| 2    | Registro de errores, conceptos raíz y árbol vivo                                    | Lista     |
+| 3    | Repetición espaciada y pantalla de repaso                                           | Lista     |
 | 4    | Calculadora de notas, promedio ponderado, rendimiento de estudio y plan             | Lista     |
-| 5    | Módulos por nivel: Saber 11, Trabajo de grado, Lecturas, Saber Pro / TyT            | Pendiente |
+| 5    | Módulos por nivel: Saber 11, Trabajo de grado, Lecturas, Saber Pro / TyT            | Lista     |
 | 6    | Ejemplos resueltos por área con diagrama de cuerpo libre                            | Pendiente |
 | 7    | Respaldo JSON, PWA y pulido                                                         | Pendiente |
 
@@ -51,6 +51,7 @@ npm run format     # formatea el código con Prettier
 ```
 src/
   app/          rutas y enrutador por hash (#/materias), funciona sin servidor
+  config/       valores externos que hay que verificar (pesos del Saber 11)
   componentes/  marco de la app (barra lateral, encabezado, navegación móvil), tarjetas e íconos
   db/           base de datos Dexie, esquemas Zod, repositorio y consultas en vivo
   dominio/      catálogo de niveles, áreas, módulos y la lógica de estudio (con pruebas)
@@ -94,6 +95,15 @@ Se pueden tener varios perfiles a la vez (por ejemplo, un tecnólogo y una carre
 - Rendimiento de estudio: puntos ganables por hora = peso del tema en el examen × (1 − dominio) ÷ horas estimadas. Con créditos, las horas salen de créditos × horas por crédito × trabajo independiente × peso del corte × peso del tema; sin créditos se usa una estimación por peso. Ver `src/dominio/rendimiento.ts`.
 - El plan reparte las horas de cada tema entre hoy y su examen. Reserva primero el tiempo de los repasos y luego asigna bloques por rendimiento, subiendo las materias apretadas (lo que les falta frente a las horas que quedarían antes del examen). Avisa si las horas no alcanzan. Las horas por día y los días sin estudio se guardan por perfil. Ver `src/dominio/plan.ts`.
 - Al marcar un bloque como hecho se guarda una sesión de estudio; el plan descuenta esas horas y se recalcula solo si te atrasas.
+
+## Módulos por nivel
+
+- Saber 11 (bachillerato): registra simulacros con el puntaje de las cinco pruebas (0 a 100). El global (0 a 500) es el promedio ponderado por 5, con pesos 3 para Lectura Crítica, Matemáticas, Sociales y Ciudadanas y Ciencias Naturales, y 1 para Inglés. Los pesos están en `src/config/saber11.ts` con una nota para verificarlos contra la resolución vigente del ICFES. La pantalla muestra la evolución del global y qué prueba reforzar primero: la que deja más puntos de global por ganar según el promedio de los últimos tres simulacros, subiendo un poco las que vienen bajando. Ver `src/dominio/saber11.ts`.
+- Saber Pro / Saber TyT (técnico, tecnólogo y profesional, opcional): el estudiante define los módulos genéricos y específicos (hay nombres sugeridos para los genéricos). Cada práctica se guarda como aciertos sobre preguntas y se compara en porcentaje; la app no convierte a la escala oficial porque no se puede verificar. Ver `src/dominio/saberPro.ts`.
+- Trabajo de grado (especialización y maestría) e hitos de investigación (doctorado): hitos con fecha, estado y notas, con hitos sugeridos por nivel, progreso, próxima entrega, atrasados y calendario de entregas por mes. Muestra también la regla de promedio del perfil (nota mínima por curso y acumulado mínimo) frente al acumulado actual. Ver `src/dominio/hitos.ts`.
+- Lecturas (posgrado): cola de lectura (primero lo que estás leyendo), estado por lectura, notas y citas con fuente y página. El banco de citas reúne todas las citas, se busca sin importar tildes y copia cada cita con su fuente. Ver `src/dominio/lecturas.ts`.
+- Bitácora de avances (doctorado; se puede activar en especialización y maestría): entradas con fecha, horas y el hito al que aportan, con horas de la semana, de los últimos 30 días y aviso si llevas una semana sin registrar. Ver `src/dominio/bitacora.ts`.
+- Los datos de ejemplo traen un perfil de bachillerato con simulacros, prácticas de Saber TyT en el perfil de tecnólogo y un perfil de maestría con hitos, lecturas y bitácora.
 
 ## Datos y privacidad
 
