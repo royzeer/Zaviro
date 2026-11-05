@@ -9,6 +9,7 @@ import { useConsulta } from '@/db/useConsulta';
 import { useSubida } from '@/estado/subida';
 import { usePerfil } from '@/estado/usePerfil';
 import {
+  analizarSecciones,
   estructurarDocumento,
   fechasDeExamen,
   normalizarPalabra,
@@ -17,9 +18,8 @@ import {
   type DocumentoLeido,
   type FechaExamen,
 } from '@/dominio/documentos';
-import { iaDisponible, organizarConIa } from '@/documentos/ia';
+import { investigarSecciones } from '@/documentos/investigar';
 import { ErrorDocumento, leerArchivo, TIPOS_ACEPTADOS } from '@/documentos/leer';
-import { ErrorApi } from '@/sincronizacion/cliente';
 import { Dialogo } from '@/componentes/Dialogo';
 import { Icono } from '@/componentes/Icono';
 import { fechaInputAIso } from '@/utilidades/fechas';
@@ -28,13 +28,13 @@ interface Lectura {
   archivo: string;
   documento: DocumentoLeido;
   fechas: FechaExamen[];
-  /** Fecha de examen que encontró la IA (AAAA-MM-DD). */
-  fechaIa?: string | null;
-  /** Por qué no se usó la IA, si se intentó. */
-  avisoIa?: string;
+  /** Temas con resumen encontrado en internet (null si no se pudo buscar). */
+  conInternet: number | null;
 }
 
 const DIFICULTAD = { baja: 'Fácil', media: 'Media', alta: 'Difícil' } as const;
+/** Más temas que esto no se investigan, para no tardar demasiado. */
+const MAX_TEMAS_INTERNET = 25;
 
 function materiaSugerida(doc: DocumentoLeido, archivo: string, materias: Materia[]) {
   const textos = normalizarPalabra(`${doc.titulo} ${archivo}`);
@@ -52,8 +52,7 @@ function Revision({
   materias: Materia[];
   alTerminar: (r: ResultadoImportacion) => void;
 }) {
-  const { documento, fechas, fechaIa } = lectura;
-  const conIa = documento.organizadoPor === 'ia';
+  const { documento, fechas } = lectura;
   const [materiaId, setMateriaId] = useState(() =>
     materiaSugerida(documento, lectura.archivo, materias),
   );
@@ -61,14 +60,14 @@ function Revision({
   const [elegidas, setElegidas] = useState(() => documento.secciones.map((_, i) => i));
   const materia = materias.find((m) => m.id === materiaId);
   const [fecha, setFecha] = useState(() =>
-    fechaIa ? fechaIa : fechas[0] ? format(fechas[0].fecha, 'yyyy-MM-dd') : '',
+    fechas[0] ? format(fechas[0].fecha, 'yyyy-MM-dd') : '',
   );
   const [tarjetas, setTarjetas] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
   const pesos = pesosDeSecciones(elegidas.map((i) => documento.secciones[i]!));
   const cantidadDefiniciones = elegidas.reduce(
-    (s, i) => s + tarjetasDeSeccion(documento.secciones[i]!).length,
+    (s, i) => s + tarjetasDeSeccion(documento.secciones[i]!, 8).length,
     0,
   );
 
@@ -89,29 +88,17 @@ function Revision({
 
   return (
     <div className="flex flex-col gap-4">
-      {conIa ? (
-        <div className="flex flex-col gap-1.5 text-sm text-tinta-suave">
-          <span className="chip self-start">
-            <Icono nombre="documento" tamano={14} /> Organizado con IA
-          </span>
-          <p>
-            Analizamos <strong className="text-tinta">{lectura.archivo}</strong> y armamos{' '}
-            {documento.secciones.length} {documento.secciones.length === 1 ? 'tema' : 'temas'} con
-            su apunte de estudio, preguntas de repaso y un peso según lo importante que es cada uno.
-            {documento.resumen ? ` ${documento.resumen}` : ''}
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1.5 text-sm text-tinta-suave">
-          <p>
-            Leímos <strong className="text-tinta">{lectura.archivo}</strong>: {documento.palabras}{' '}
-            palabras en {documento.secciones.length}{' '}
-            {documento.secciones.length === 1 ? 'sección' : 'secciones'}. Cada sección será un tema
-            con su apunte, y entrará solo a tu plan de estudio.
-          </p>
-          {lectura.avisoIa && <p className="text-xs">{lectura.avisoIa}</p>}
-        </div>
-      )}
+      <p className="text-sm text-tinta-suave">
+        Leímos <strong className="text-tinta">{lectura.archivo}</strong>: {documento.palabras}{' '}
+        palabras en {documento.secciones.length}{' '}
+        {documento.secciones.length === 1 ? 'sección' : 'secciones'}. Cada sección será un tema con
+        su apunte, y entrará solo a tu plan de estudio con un peso según lo importante que es.
+        {lectura.conInternet
+          ? ` Buscamos en internet y agregamos información y enlaces a ${lectura.conInternet} ${lectura.conInternet === 1 ? 'tema' : 'temas'}.`
+          : lectura.conInternet === 0
+            ? ' Agregamos enlaces para buscar cada tema en internet.'
+            : ''}
+      </p>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
@@ -200,11 +187,9 @@ function Revision({
               aria-describedby="doc-fecha-ayuda"
             />
             <p id="doc-fecha-ayuda" className="mt-1.5 text-xs text-tinta-suave">
-              {fechaIa
-                ? 'La IA la encontró en el documento.'
-                : fechas[0]
-                  ? `La encontramos en el documento: "${fechas[0].contexto}".`
-                  : 'No encontramos una fecha en el documento. Si la sabes, ponla para que el plan priorice esta materia.'}
+              {fechas[0]
+                ? `La encontramos en el documento: "${fechas[0].contexto}".`
+                : 'No encontramos una fecha en el documento. Si la sabes, ponla para que el plan priorice esta materia.'}
             </p>
           </>
         )}
@@ -218,8 +203,8 @@ function Revision({
             onChange={(e) => setTarjetas(e.target.checked)}
           />
           Crear {cantidadDefiniciones}{' '}
-          {cantidadDefiniciones === 1 ? 'tarjeta de repaso' : 'tarjetas de repaso'}{' '}
-          {conIa ? 'con las preguntas de la IA' : 'con las definiciones que encontramos'}
+          {cantidadDefiniciones === 1 ? 'tarjeta de repaso' : 'tarjetas de repaso'} con las
+          definiciones, listas y resúmenes que encontramos
         </label>
       )}
 
@@ -275,7 +260,8 @@ export function CentroDocumentos() {
   const registrarSelector = useSubida((s) => s.registrarSelector);
   const entrada = useRef<HTMLInputElement>(null);
   const [abierto, setAbierto] = useState(false);
-  const [leyendo, setLeyendo] = useState<'' | 'leyendo' | 'ia'>('');
+  const [leyendo, setLeyendo] = useState<'' | 'leyendo' | 'internet'>('');
+  const [avance, setAvance] = useState({ hechas: 0, total: 0 });
   const [error, setError] = useState('');
   const [lectura, setLectura] = useState<Lectura | null>(null);
   const [resultado, setResultado] = useState<ResultadoImportacion | null>(null);
@@ -290,33 +276,32 @@ export function CentroDocumentos() {
     setError('');
     setLectura(null);
     setResultado(null);
-    const nivel = perfil?.nivel;
     leerArchivo(archivo)
       .then(async (bloques) => {
         if (!vigente) return;
-        const documento = estructurarDocumento(bloques, archivo.name);
+        const documento = analizarSecciones(estructurarDocumento(bloques, archivo.name));
         const texto = documento.secciones.map((s) => s.contenido).join('\n');
-        const base: Lectura = {
-          archivo: archivo.name,
-          documento: { ...documento, organizadoPor: 'reglas' },
-          fechas: fechasDeExamen(texto, new Date()),
-        };
-        // Con IA disponible, ella organiza los temas; si falla, se queda lo de las reglas propias.
-        if (documento.palabras > 0 && (await iaDisponible())) {
-          if (!vigente) return;
-          setLeyendo('ia');
-          try {
-            const r = await organizarConIa(documento, archivo.name, nivel);
-            if (vigente) setLectura({ ...base, documento: r.documento, fechaIa: r.fechaExamen });
-            return;
-          } catch (e) {
-            base.avisoIa =
-              e instanceof ErrorApi && e.estado === 413
-                ? 'El documento es muy largo para la IA, así que lo organizamos con el modo automático.'
-                : 'La IA no respondió esta vez, así que lo organizamos con el modo automático.';
-          }
+        const fechas = fechasDeExamen(texto, new Date());
+        let conInternet: number | null = null;
+        let secciones = documento.secciones;
+        // Con internet, cada tema se busca en varias páginas; sin internet se sigue igual.
+        const aInvestigar = secciones.slice(0, MAX_TEMAS_INTERNET);
+        if (navigator.onLine && aInvestigar.length > 0) {
+          setLeyendo('internet');
+          setAvance({ hechas: 0, total: aInvestigar.length });
+          const r = await investigarSecciones(aInvestigar, documento.titulo, (hechas) => {
+            if (vigente) setAvance({ hechas, total: aInvestigar.length });
+          });
+          secciones = [...r.secciones, ...secciones.slice(MAX_TEMAS_INTERNET)];
+          conInternet = r.conResumen;
         }
-        if (vigente) setLectura(base);
+        if (vigente)
+          setLectura({
+            archivo: archivo.name,
+            documento: { ...documento, secciones },
+            fechas,
+            conInternet,
+          });
       })
       .catch((e: unknown) => {
         if (vigente)
@@ -334,8 +319,6 @@ export function CentroDocumentos() {
     return () => {
       vigente = false;
     };
-    // El perfil solo se lee al empezar; no debe reiniciar la lectura si cambia.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [archivo, elegir]);
 
   function cerrar() {
@@ -359,8 +342,8 @@ export function CentroDocumentos() {
       <Dialogo abierto={abierto} titulo="Subir documento" onCerrar={cerrar} ancho="max-w-2xl">
         {leyendo && (
           <p role="status" className="py-6 text-center text-sm text-tinta-suave">
-            {leyendo === 'ia'
-              ? 'Analizando tus apuntes con IA y armando el plan… puede tardar un par de minutos.'
+            {leyendo === 'internet'
+              ? `Buscando cada tema en internet… ${avance.hechas} de ${avance.total}`
               : 'Leyendo el documento…'}
           </p>
         )}

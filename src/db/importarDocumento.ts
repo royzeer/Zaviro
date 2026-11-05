@@ -116,7 +116,7 @@ export async function importarDocumento(
         );
         resultado.apuntes++;
         if (!o.crearTarjetas) continue;
-        for (const t of tarjetasDeSeccion(s)) {
+        for (const t of tarjetasDeSeccion(s, 8)) {
           await crearTarjeta(
             {
               origenTipo: 'apunte',

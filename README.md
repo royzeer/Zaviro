@@ -18,7 +18,6 @@ La app es inteligente por lógica propia, no por IA. Cruza los errores de todas 
 | 7    | Respaldo JSON, PWA y pulido                                                         | Lista  |
 | 8    | Cuentas de usuario con MySQL y sincronización entre dispositivos                    | Lista  |
 | 9    | Subir PDF o Word y armar temas, apuntes, tarjetas y plan de forma automática        | Lista  |
-| 10   | Organizar los apuntes subidos con IA (Claude), con modo propio de respaldo          | Lista  |
 
 ## Requisitos
 
@@ -143,18 +142,12 @@ En Apuntes, en Inicio o en el plan de estudio está el botón "Subir PDF o Word"
 
 - Títulos: en Word se usan los estilos de título (o los párrafos cortos en negrita si no hay estilos). En PDF se reconocen por el tamaño de la letra frente al del cuerpo, por la numeración ("2.1", "Capítulo 3", "IV.") o porque están en mayúsculas. Se quitan los encabezados y números de página que se repiten.
 - Secciones: cada título del nivel más alto que se repite es un tema; los subtítulos quedan dentro del apunte. Si el documento no tiene títulos, se parte en trozos de unas 700 palabras con sus palabras clave como nombre.
-- Pesos: cada tema pesa según lo largo de su sección (suman 100 y ninguno baja de 5).
+- Importancia y pesos: cada tema recibe una importancia de 1 a 10 según lo largo que es, cuánto se relaciona con el resto del documento (palabras clave compartidas), las palabras de énfasis ("importante", "clave", "examen"…) y las definiciones que trae. Los pesos salen de esa importancia (suman 100 y ninguno baja de 5).
+- Dificultad: fácil, media o difícil según las fórmulas, las palabras técnicas largas y lo largas que son las oraciones.
 - Fecha del examen: se busca una fecha cerca de palabras como parcial, examen, quiz o entrega ("el parcial es el 20 de noviembre", "Examen final: 10/12/2026"). Se puede corregir antes de guardar.
-- Tarjetas: las definiciones del texto ("Término: explicación" o "La aceleración es…") se vuelven tarjetas de repaso.
+- Tarjetas: las definiciones del texto ("Término: explicación" o "La aceleración es…") y las listas con enunciado ("Tipos de energía:" y sus viñetas) se vuelven tarjetas de repaso.
+- Búsqueda en internet: con conexión, cada tema (hasta 25) se busca en Wikipedia en español (resumen y enlace), Wikilibros y artículos académicos abiertos de OpenAlex, y se agregan enlaces para buscarlo en Google, YouTube y Khan Academy. Todo eso queda en el apunte bajo "Para saber más", y el resumen de Wikipedia da una tarjeta más. Son servicios gratuitos que no piden clave; sin internet se sigue sin ellos. Ver `src/documentos/investigar.ts`.
 - Si la materia ya tiene un tema con el mismo nombre, se reutiliza.
-
-### Con inteligencia artificial (Claude)
-
-Si el servidor tiene la variable `ANTHROPIC_API_KEY` y el estudiante inició sesión, después de leer el archivo la app le pide a Claude (modelo `claude-opus-5-5`, se cambia con `ANTHROPIC_MODEL`) que organice los apuntes: agrupa las secciones en temas con sentido, les da un nombre claro, decide cuánto pesa cada tema según lo importante que es (no solo por lo largo), marca la dificultad, escribe un apunte de estudio por tema (debajo queda el texto original del documento), crea preguntas de repaso y busca la fecha del examen. La ventana de revisión muestra "Organizado con IA".
-
-- Sin clave, sin sesión, sin internet o si la IA falla, la app usa el modo automático de arriba sin que el estudiante tenga que hacer nada distinto.
-- La IA cobra por uso. Cada cuenta puede analizar `IA_LIMITE_POR_HORA` documentos por hora (15 si no se pone) y los documentos de más de 400 000 caracteres usan el modo automático. Como referencia, unos apuntes de 20 páginas cuestan entre 10 y 40 centavos de dólar.
-- La ruta es `POST /api/ia/plan` (con sesión) y `GET /api/ia/estado` dice si está activa. Ver `backend/src/services/ia.service.ts` y `src/documentos/ia.ts`.
 
 Con eso no hay que armar el plan a mano: los temas entran solos al plan de estudio con sus horas estimadas, y la fecha del examen ordena las prioridades. Los PDF escaneados (solo imagen) no tienen texto y la app avisa. Ver `src/dominio/documentos.ts`, `src/documentos/leer.ts` y `src/db/importarDocumento.ts`.
 
@@ -171,14 +164,14 @@ Con eso no hay que armar el plan a mano: los temas entran solos al plan de estud
 Igual que Kuadri: la app en Vercel, la API en Render y MySQL en Aiven (todos con plan gratuito).
 
 1. Base de datos en Aiven: usa el servicio MySQL que ya tengas (por ejemplo el de Kuadri) con `DB_NAME=zaviro`. La API crea la base y las tablas sola al arrancar; `npm run db:init` sirve si quieres prepararla desde tu computador.
-2. API en Render: crea un Web Service desde este repositorio con Root Directory `backend`, Build Command `npm install && npm run build` y Start Command `npm start`. En Environment agrega `NODE_ENV=production`, `JWT_SECRET` (una frase larga y aleatoria), `FRONTEND_URL` (la dirección de Vercel, por ejemplo `https://zaviro.vercel.app`) y las variables `DB_*` de Aiven. Para la IA agrega `ANTHROPIC_API_KEY` (se crea en https://platform.claude.com, en API Keys). Al terminar, `https://<tu-servicio>.onrender.com/api/salud` debe responder.
+2. API en Render: crea un Web Service desde este repositorio con Root Directory `backend`, Build Command `npm install && npm run build` y Start Command `npm start`. En Environment agrega `NODE_ENV=production`, `JWT_SECRET` (una frase larga y aleatoria), `FRONTEND_URL` (la dirección de Vercel, por ejemplo `https://zaviro.vercel.app`) y las variables `DB_*` de Aiven. Al terminar, `https://<tu-servicio>.onrender.com/api/salud` debe responder.
 3. App en Vercel: en Settings, Environment Variables, agrega `VITE_API_URL=https://<tu-servicio>.onrender.com/api` y vuelve a desplegar.
 
 El plan gratuito de Render se duerme cuando no se usa: la primera vez que se entra puede tardar hasta un minuto, y la pantalla de acceso lo avisa.
 
 ## Datos y privacidad
 
-Los datos de cada estudiante están en su cuenta y solo se pueden leer con su sesión. El navegador guarda una copia en IndexedDB para funcionar sin internet; al cerrar la sesión esa copia se borra. Los archivos que se suben se leen en el navegador y no se guardan en el servidor: solo se guardan los apuntes que salen de ellos. Si la IA está activa, el texto del documento pasa por la API y se envía a Anthropic (Claude) para organizarlo; no se guarda en la base de datos. Los datos de ejemplo se marcan con `esEjemplo` y se pueden borrar desde Ajustes con el botón "Borrar datos de ejemplo", sin afectar los datos reales.
+Los datos de cada estudiante están en su cuenta y solo se pueden leer con su sesión. El navegador guarda una copia en IndexedDB para funcionar sin internet; al cerrar la sesión esa copia se borra. Los documentos que se suben no salen del navegador: solo se guardan los apuntes que salen de ellos. Para buscar en internet solo se envía el nombre de cada tema y de la materia a Wikipedia, Wikilibros y OpenAlex, nunca el texto de los apuntes. Los datos de ejemplo se marcan con `esEjemplo` y se pueden borrar desde Ajustes con el botón "Borrar datos de ejemplo", sin afectar los datos reales.
 
 ### Respaldo
 

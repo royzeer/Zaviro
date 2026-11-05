@@ -26,10 +26,10 @@ export interface Seccion {
   /** Contenido en Markdown. */
   contenido: string;
   palabras: number;
-  /** Importancia de 1 a 10 que decidió la IA; sin ella el peso sale de la extensión. */
+  /** Importancia de 1 a 10 (ver `analizarSecciones`); sin ella el peso sale de la extensión. */
   importancia?: number;
   dificultad?: 'baja' | 'media' | 'alta';
-  /** Preguntas de repaso escritas por la IA; sin ellas se buscan definiciones en el texto. */
+  /** Tarjetas ya armadas; sin ellas se buscan definiciones en el texto. */
   tarjetas?: { frente: string; reverso: string }[];
 }
 
@@ -37,26 +37,6 @@ export interface DocumentoLeido {
   titulo: string;
   secciones: Seccion[];
   palabras: number;
-  /** Quién organizó los temas: la IA (Claude) o las reglas propias de la app. */
-  organizadoPor?: 'ia' | 'reglas';
-  /** Resumen de la IA sobre de qué tratan los apuntes. */
-  resumen?: string;
-}
-
-/** Pesos (en %) de las secciones: por importancia si la IA la dio, si no por extensión. */
-export function pesosDeSecciones(secciones: Seccion[]): number[] {
-  if (secciones.length > 0 && secciones.every((s) => s.importancia !== undefined))
-    return pesosPorExtension(secciones.map((s) => s.importancia!));
-  return pesosPorExtension(secciones.map((s) => s.palabras));
-}
-
-/** Tarjetas de repaso de una sección: las de la IA o, si no hay, las definiciones del texto. */
-export function tarjetasDeSeccion(s: Seccion, maximo = 6): { frente: string; reverso: string }[] {
-  if (s.tarjetas) return s.tarjetas.slice(0, maximo);
-  return definiciones(s.contenido, maximo).map((d) => ({
-    frente: `¿Qué es ${d.termino}?`,
-    reverso: d.definicion,
-  }));
 }
 
 const NUMERADO =
@@ -492,4 +472,103 @@ export function definiciones(contenido: string, maximo = 12): Definicion[] {
     if (salida.length >= maximo) break;
   }
   return salida.slice(0, maximo);
+}
+
+/** Pesos (en %) de las secciones: por importancia si se calculó, si no por extensión. */
+export function pesosDeSecciones(secciones: Seccion[]): number[] {
+  if (secciones.length > 0 && secciones.every((s) => s.importancia !== undefined))
+    return pesosPorExtension(secciones.map((s) => s.importancia!));
+  return pesosPorExtension(secciones.map((s) => s.palabras));
+}
+
+/** Tarjetas de repaso de una sección: las ya armadas o, si no hay, las definiciones del texto. */
+export function tarjetasDeSeccion(s: Seccion, maximo = 6): { frente: string; reverso: string }[] {
+  if (s.tarjetas) return s.tarjetas.slice(0, maximo);
+  return definiciones(s.contenido, maximo).map((d) => ({
+    frente: `¿Qué es ${d.termino}?`,
+    reverso: d.definicion,
+  }));
+}
+
+/**
+ * Listas con un enunciado ("Tipos de energía:" seguido de viñetas) para tarjetas de repaso:
+ * el enunciado es la pregunta y las viñetas la respuesta.
+ */
+export function listasConEnunciado(contenido: string, maximo = 4): Definicion[] {
+  const salida: Definicion[] = [];
+  const lineas = contenido.split('\n').map((l) => l.trim());
+  for (let i = 0; i < lineas.length && salida.length < maximo; i++) {
+    const enunciado = lineas[i]!.replace(/^#+\s*/, '');
+    if (!/:$/.test(enunciado) || enunciado.startsWith('- ') || contarPalabras(enunciado) > 12)
+      continue;
+    const items: string[] = [];
+    let j = i + 1;
+    while (j < lineas.length && !lineas[j]) j++;
+    while (j < lineas.length && lineas[j]!.startsWith('- ')) items.push(lineas[j++]!.slice(2));
+    if (items.length < 2) continue;
+    salida.push({
+      termino: enunciado.slice(0, -1).trim(),
+      definicion: items.slice(0, 8).join('; '),
+    });
+  }
+  return salida;
+}
+
+const ENFASIS =
+  /\b(importante|fundamental|clave|esencial|recuerd[ae]|ojo|examen|parcial|evaluar[aá]|siempre|nunca|principal(?:es)?)\b/gi;
+const FORMULA = /[=≈≠≤≥√∑∫π^²³]|\b\d+(?:[.,]\d+)?\s*[a-zA-Z]{1,3}\b/g;
+
+/** Rasgos que miden cuánto pesa y qué tan difícil es una sección. */
+export function rasgosDeSeccion(s: Seccion, clavesDelDocumento: Set<string>) {
+  const palabras = Math.max(1, s.palabras);
+  const claves = palabrasClave(s.contenido, 8).map(normalizarPalabra);
+  // Centralidad: cuántas de sus palabras clave también son clave en el resto del documento.
+  const compartidas = claves.filter((k) => clavesDelDocumento.has(k)).length;
+  const enfasis = (s.contenido.match(ENFASIS) ?? []).length;
+  const formulas = (s.contenido.match(FORMULA) ?? []).length / palabras;
+  const largas = (s.contenido.match(/\p{L}{11,}/gu) ?? []).length / palabras;
+  const oraciones = Math.max(1, (s.contenido.match(/[.!?](\s|$)/g) ?? []).length);
+  const porOracion = palabras / oraciones;
+  const definidas = definiciones(s.contenido, 20).length;
+  return { palabras, compartidas, enfasis, formulas, largas, porOracion, definidas };
+}
+
+/**
+ * Analiza el documento sin IA: da a cada sección una importancia de 1 a 10 (por extensión,
+ * por cuánto se relaciona con el resto, por las palabras de énfasis y las definiciones),
+ * estima la dificultad (fórmulas, palabras técnicas largas y oraciones largas) y arma las
+ * tarjetas de repaso con las definiciones y las listas con enunciado.
+ */
+export function analizarSecciones(doc: DocumentoLeido): DocumentoLeido {
+  const todo = doc.secciones.map((s) => s.contenido).join('\n\n');
+  const clavesDoc = new Set(palabrasClave(todo, 40).map(normalizarPalabra));
+  const rasgos = doc.secciones.map((s) => rasgosDeSeccion(s, clavesDoc));
+  const maxPalabras = Math.max(1, ...rasgos.map((r) => r.palabras));
+  const secciones = doc.secciones.map((s, i) => {
+    const r = rasgos[i]!;
+    const puntaje =
+      0.45 * (Math.log(1 + r.palabras) / Math.log(1 + maxPalabras)) +
+      0.25 * Math.min(1, r.compartidas / 4) +
+      0.15 * Math.min(1, r.enfasis / 3) +
+      0.15 * Math.min(1, r.definidas / 3);
+    const importancia = Math.max(1, Math.min(10, Math.round(1 + puntaje * 9)));
+    const dureza =
+      Math.min(1, r.formulas * 25) * 0.45 +
+      Math.min(1, r.largas * 8) * 0.3 +
+      Math.min(1, Math.max(0, r.porOracion - 12) / 18) * 0.25;
+    const dificultad: Seccion['dificultad'] =
+      dureza >= 0.5 ? 'alta' : dureza >= 0.25 ? 'media' : 'baja';
+    const tarjetas = [
+      ...definiciones(s.contenido, 6).map((d) => ({
+        frente: `¿Qué es ${d.termino}?`,
+        reverso: d.definicion,
+      })),
+      ...listasConEnunciado(s.contenido).map((d) => ({
+        frente: `${d.termino}: ¿cuáles son?`,
+        reverso: d.definicion,
+      })),
+    ].slice(0, 8);
+    return { ...s, importancia, dificultad, tarjetas };
+  });
+  return { ...doc, secciones };
 }
