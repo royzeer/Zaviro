@@ -34,6 +34,19 @@
     --f-friccion: 191 104 18;
     --f-tension: 38 120 72;
     --f-aplicada: 122 79 160;
+    /* Vidrio: superficies translúcidas sobre el fondo degradado. */
+    --vidrio: 255 251 244;
+    --vidrio-alfa: 0.56;
+    --vidrio-fuerte-alfa: 0.74;
+    --vidrio-borde: 255 255 255;
+    --vidrio-borde-alfa: 0.62;
+    --vidrio-brillo: 0.75;
+    --fondo-degradado:
+      radial-gradient(1000px 680px at 90% -10%, rgb(222 170 100 / 0.75), transparent 62%),
+      radial-gradient(820px 620px at -8% 22%, rgb(150 108 70 / 0.6), transparent 60%),
+      radial-gradient(900px 640px at 40% 118%, rgb(110 72 44 / 0.55), transparent 62%),
+      radial-gradient(600px 420px at 70% 55%, rgb(246 226 196 / 0.7), transparent 70%),
+      linear-gradient(160deg, #eedfc8 0%, #ddc4a2 50%, #c9a67e 100%);
   }
 
   :root[data-tema='oscuro'] {
@@ -59,6 +72,17 @@
     --f-friccion: 232 154 74;
     --f-tension: 112 196 140;
     --f-aplicada: 186 148 226;
+    --vidrio: 255 236 214;
+    --vidrio-alfa: 0.07;
+    --vidrio-fuerte-alfa: 0.12;
+    --vidrio-borde: 255 236 214;
+    --vidrio-borde-alfa: 0.14;
+    --vidrio-brillo: 0.12;
+    --fondo-degradado:
+      radial-gradient(1100px 720px at 85% -15%, rgb(176 112 46 / 0.55), transparent 62%),
+      radial-gradient(900px 640px at -10% 35%, rgb(110 66 34 / 0.55), transparent 62%),
+      radial-gradient(900px 620px at 60% 115%, rgb(150 96 44 / 0.35), transparent 62%),
+      linear-gradient(160deg, #1c1510 0%, #2a1d14 50%, #20160f 100%);
   }
 
   html {
@@ -68,6 +92,14 @@
 
   body {
     @apply min-h-dvh bg-fondo font-sans text-[15px] leading-relaxed;
+    /* Fondo cálido y fijo: el vidrio de las tarjetas lo deja ver desenfocado. */
+    background-image: var(--fondo-degradado);
+    background-attachment: fixed;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: rgb(var(--primario));
   }
 
   :focus-visible {
@@ -85,8 +117,22 @@
 }
 
 @layer components {
+  .vidrio {
+    background-color: rgb(var(--vidrio) / var(--vidrio-alfa));
+    border: 1px solid rgb(var(--vidrio-borde) / var(--vidrio-borde-alfa));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / var(--vidrio-brillo)),
+      0 1px 2px rgb(var(--sombra) / 0.05),
+      0 16px 40px -20px rgb(var(--sombra) / 0.45);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    backdrop-filter: blur(22px) saturate(150%);
+  }
+  .vidrio-fuerte {
+    @apply vidrio;
+    background-color: rgb(var(--vidrio) / var(--vidrio-fuerte-alfa));
+  }
   .tarjeta {
-    @apply rounded-tarjeta border border-linea/70 bg-superficie p-5 shadow-tarjeta;
+    @apply vidrio rounded-tarjeta p-5;
   }
   .titulo-tarjeta {
     @apply text-base font-bold tracking-tight text-tinta;
@@ -98,19 +144,33 @@
     @apply boton bg-primario text-sobre-primario hover:bg-primario/90;
   }
   .boton-secundario {
-    @apply boton border border-tinta/25 bg-superficie text-tinta hover:bg-superficie-2;
+    @apply boton vidrio text-tinta hover:bg-superficie/80;
   }
   .boton-fantasma {
     @apply boton px-3 text-tinta-suave hover:bg-superficie-2 hover:text-tinta;
   }
   .campo {
-    @apply w-full rounded-xl border border-linea bg-superficie px-3.5 py-2.5 text-sm text-tinta placeholder:text-tinta-suave/70 focus:border-acento;
+    @apply w-full rounded-xl border border-linea/80 bg-superficie/70 px-3.5 py-2.5 text-sm text-tinta placeholder:text-tinta-suave/70 focus:border-acento;
   }
   .etiqueta {
     @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-tinta-suave;
   }
   .chip {
-    @apply inline-flex items-center rounded-full bg-superficie-2 px-2.5 py-0.5 text-xs font-semibold text-tinta-suave;
+    @apply inline-flex items-center rounded-full bg-superficie-2/80 px-2.5 py-0.5 text-xs font-semibold text-tinta-suave;
+  }
+}
+
+/* Sin desenfoque disponible, o si la persona pide menos transparencia: superficies sólidas. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .vidrio {
+    background-color: rgb(var(--superficie) / 0.94);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .vidrio {
+    background-color: rgb(var(--superficie));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 
