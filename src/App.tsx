@@ -58,7 +58,7 @@ export function App() {
   if (!usuario) return <Acceso />;
   if (preparando) {
     return (
-      <div className="grid min-h-dvh place-items-center bg-fondo px-4">
+      <div className="grid min-h-dvh place-items-center px-4">
         <p role="status" className="text-sm font-semibold text-tinta-suave">
           Trayendo tus datos de estudio…
         </p>
@@ -83,7 +83,7 @@ function AppConSesion() {
     window.scrollTo({ top: 0 });
   }, [def]);
 
-  if (cargando) return <div className="min-h-dvh bg-fondo" aria-busy="true" />;
+  if (cargando) return <div className="min-h-dvh" aria-busy="true" />;
   if (!perfil) return <Bienvenida primeraVez />;
   if (ruta === '/nuevo-perfil') return <Bienvenida primeraVez={false} />;
 

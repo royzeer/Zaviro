@@ -102,7 +102,7 @@ export function Bienvenida({ primeraVez }: { primeraVez: boolean }) {
   }
 
   return (
-    <div className="min-h-dvh bg-fondo">
+    <div className="min-h-dvh">
       <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-16 pt-8 sm:px-6 sm:pt-14">
         <header className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">

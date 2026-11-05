@@ -96,8 +96,8 @@ export function Acceso() {
   );
 
   return (
-    <main className="grid min-h-dvh bg-fondo lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-      <section className="flex flex-col justify-between gap-8 bg-lateral px-6 py-8 text-lateral-tinta sm:px-10 lg:py-12">
+    <main className="grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+      <section className="vidrio m-3 flex flex-col justify-between gap-8 rounded-[1.75rem] px-6 py-8 text-tinta sm:px-10 lg:py-12">
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-primario text-sobre-primario shadow-tarjeta">
             <Icono nombre="raiz" tamano={22} />
@@ -111,7 +111,7 @@ export function Acceso() {
           <ul className="mt-6 hidden flex-col gap-3 sm:flex">
             {VENTAJAS.map((v) => (
               <li key={v} className="flex items-start gap-3 text-[15px] leading-snug">
-                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-lateral-tinta/15">
+                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primario text-sobre-primario">
                   <Icono nombre="nube" tamano={14} />
                 </span>
                 {v}
@@ -129,7 +129,7 @@ export function Acceso() {
           <div
             role="tablist"
             aria-label="Tipo de acceso"
-            className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-superficie-2 p-1"
+            className="vidrio mb-6 grid grid-cols-2 gap-1 rounded-full p-1"
           >
             {(['login', 'registro'] as const).map((m) => (
               <button
@@ -138,7 +138,7 @@ export function Acceso() {
                 type="button"
                 aria-selected={modo === m}
                 onClick={() => cambiarModo(m)}
-                className={`rounded-lg py-2 text-sm font-semibold transition-colors ${
+                className={`rounded-full py-2 text-sm font-semibold transition-colors ${
                   modo === m ? 'bg-superficie text-tinta shadow-tarjeta' : 'text-tinta-suave'
                 }`}
               >
