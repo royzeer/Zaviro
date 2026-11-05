@@ -26,6 +26,17 @@ export class ErrorApi extends Error {
   }
 }
 
+/** Explica por qué no se llegó al servidor, con la pista más probable. */
+export function mensajeSinConexion(
+  api = URL_API,
+  paginaLocal = typeof location !== 'undefined' && /^(localhost|127\.)/.test(location.hostname),
+): string {
+  if (/\/\/(localhost|127\.)/.test(api) && !paginaLocal) {
+    return 'La app no sabe dónde está el servidor: falta VITE_API_URL en Vercel (y volver a desplegar).';
+  }
+  return 'No hay conexión con el servidor. Revisa tu internet; si el servidor estaba dormido, espera un minuto y vuelve a intentar.';
+}
+
 /** Se llama cuando la API responde 401 a una petición con token. */
 let alExpirar: () => void = () => {};
 export function alExpirarSesion(f: () => void) {
@@ -48,7 +59,7 @@ async function peticion<T>(metodo: string, ruta: string, cuerpo?: unknown): Prom
       signal: control.signal,
     });
   } catch {
-    throw new ErrorApi('No hay conexión con el servidor', 0);
+    throw new ErrorApi(mensajeSinConexion(), 0);
   } finally {
     clearTimeout(reloj);
   }
