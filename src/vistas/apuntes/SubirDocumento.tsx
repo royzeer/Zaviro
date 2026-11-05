@@ -9,14 +9,16 @@ import { useConsulta } from '@/db/useConsulta';
 import { useSubida } from '@/estado/subida';
 import { usePerfil } from '@/estado/usePerfil';
 import {
-  definiciones,
+  analizarSecciones,
   estructurarDocumento,
   fechasDeExamen,
   normalizarPalabra,
-  pesosPorExtension,
+  pesosDeSecciones,
+  tarjetasDeSeccion,
   type DocumentoLeido,
   type FechaExamen,
 } from '@/dominio/documentos';
+import { investigarSecciones } from '@/documentos/investigar';
 import { ErrorDocumento, leerArchivo, TIPOS_ACEPTADOS } from '@/documentos/leer';
 import { Dialogo } from '@/componentes/Dialogo';
 import { Icono } from '@/componentes/Icono';
@@ -26,7 +28,13 @@ interface Lectura {
   archivo: string;
   documento: DocumentoLeido;
   fechas: FechaExamen[];
+  /** Temas con resumen encontrado en internet (null si no se pudo buscar). */
+  conInternet: number | null;
 }
+
+const DIFICULTAD = { baja: 'Fácil', media: 'Media', alta: 'Difícil' } as const;
+/** Más temas que esto no se investigan, para no tardar demasiado. */
+const MAX_TEMAS_INTERNET = 25;
 
 function materiaSugerida(doc: DocumentoLeido, archivo: string, materias: Materia[]) {
   const textos = normalizarPalabra(`${doc.titulo} ${archivo}`);
@@ -57,9 +65,9 @@ function Revision({
   const [tarjetas, setTarjetas] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
-  const pesos = pesosPorExtension(elegidas.map((i) => documento.secciones[i]!.palabras));
+  const pesos = pesosDeSecciones(elegidas.map((i) => documento.secciones[i]!));
   const cantidadDefiniciones = elegidas.reduce(
-    (s, i) => s + definiciones(documento.secciones[i]!.contenido, 6).length,
+    (s, i) => s + tarjetasDeSeccion(documento.secciones[i]!, 8).length,
     0,
   );
 
@@ -84,7 +92,12 @@ function Revision({
         Leímos <strong className="text-tinta">{lectura.archivo}</strong>: {documento.palabras}{' '}
         palabras en {documento.secciones.length}{' '}
         {documento.secciones.length === 1 ? 'sección' : 'secciones'}. Cada sección será un tema con
-        su apunte, y entrará solo a tu plan de estudio.
+        su apunte, y entrará solo a tu plan de estudio con un peso según lo importante que es.
+        {lectura.conInternet
+          ? ` Buscamos en internet y agregamos información y enlaces a ${lectura.conInternet} ${lectura.conInternet === 1 ? 'tema' : 'temas'}.`
+          : lectura.conInternet === 0
+            ? ' Agregamos enlaces para buscar cada tema en internet.'
+            : ''}
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -141,7 +154,10 @@ function Revision({
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">{s.titulo}</span>
-                    <span className="text-xs text-tinta-suave">{s.palabras} palabras</span>
+                    <span className="text-xs text-tinta-suave">
+                      {s.dificultad ? `${DIFICULTAD[s.dificultad]} · ` : ''}
+                      {s.palabras} palabras
+                    </span>
                   </span>
                   {peso !== undefined && <span className="chip shrink-0">{peso} %</span>}
                 </label>
@@ -188,7 +204,7 @@ function Revision({
           />
           Crear {cantidadDefiniciones}{' '}
           {cantidadDefiniciones === 1 ? 'tarjeta de repaso' : 'tarjetas de repaso'} con las
-          definiciones que encontramos
+          definiciones, listas y resúmenes que encontramos
         </label>
       )}
 
@@ -244,7 +260,8 @@ export function CentroDocumentos() {
   const registrarSelector = useSubida((s) => s.registrarSelector);
   const entrada = useRef<HTMLInputElement>(null);
   const [abierto, setAbierto] = useState(false);
-  const [leyendo, setLeyendo] = useState(false);
+  const [leyendo, setLeyendo] = useState<'' | 'leyendo' | 'internet'>('');
+  const [avance, setAvance] = useState({ hechas: 0, total: 0 });
   const [error, setError] = useState('');
   const [lectura, setLectura] = useState<Lectura | null>(null);
   const [resultado, setResultado] = useState<ResultadoImportacion | null>(null);
@@ -255,16 +272,36 @@ export function CentroDocumentos() {
     if (!archivo) return;
     let vigente = true;
     setAbierto(true);
-    setLeyendo(true);
+    setLeyendo('leyendo');
     setError('');
     setLectura(null);
     setResultado(null);
     leerArchivo(archivo)
-      .then((bloques) => {
+      .then(async (bloques) => {
         if (!vigente) return;
-        const documento = estructurarDocumento(bloques, archivo.name);
+        const documento = analizarSecciones(estructurarDocumento(bloques, archivo.name));
         const texto = documento.secciones.map((s) => s.contenido).join('\n');
-        setLectura({ archivo: archivo.name, documento, fechas: fechasDeExamen(texto, new Date()) });
+        const fechas = fechasDeExamen(texto, new Date());
+        let conInternet: number | null = null;
+        let secciones = documento.secciones;
+        // Con internet, cada tema se busca en varias páginas; sin internet se sigue igual.
+        const aInvestigar = secciones.slice(0, MAX_TEMAS_INTERNET);
+        if (navigator.onLine && aInvestigar.length > 0) {
+          setLeyendo('internet');
+          setAvance({ hechas: 0, total: aInvestigar.length });
+          const r = await investigarSecciones(aInvestigar, documento.titulo, (hechas) => {
+            if (vigente) setAvance({ hechas, total: aInvestigar.length });
+          });
+          secciones = [...r.secciones, ...secciones.slice(MAX_TEMAS_INTERNET)];
+          conInternet = r.conResumen;
+        }
+        if (vigente)
+          setLectura({
+            archivo: archivo.name,
+            documento: { ...documento, secciones },
+            fechas,
+            conInternet,
+          });
       })
       .catch((e: unknown) => {
         if (vigente)
@@ -275,7 +312,7 @@ export function CentroDocumentos() {
           );
       })
       .finally(() => {
-        if (vigente) setLeyendo(false);
+        if (vigente) setLeyendo('');
         elegir(null);
         if (entrada.current) entrada.current.value = '';
       });
@@ -305,7 +342,9 @@ export function CentroDocumentos() {
       <Dialogo abierto={abierto} titulo="Subir documento" onCerrar={cerrar} ancho="max-w-2xl">
         {leyendo && (
           <p role="status" className="py-6 text-center text-sm text-tinta-suave">
-            Leyendo el documento…
+            {leyendo === 'internet'
+              ? `Buscando cada tema en internet… ${avance.hechas} de ${avance.total}`
+              : 'Leyendo el documento…'}
           </p>
         )}
         {error && (

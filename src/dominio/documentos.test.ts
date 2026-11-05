@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  analizarSecciones,
+  listasConEnunciado,
+  pesosDeSecciones,
   contarPalabras,
   definiciones,
   estructurarDocumento,
@@ -211,5 +214,46 @@ describe('definiciones', () => {
 describe('contarPalabras', () => {
   it('cuenta palabras con tildes y números', () => {
     expect(contarPalabras('Año 2026: física cuántica')).toBe(4);
+  });
+});
+
+describe('Análisis sin IA', () => {
+  const doc = {
+    titulo: 'Física',
+    palabras: 0,
+    secciones: [
+      {
+        titulo: 'Repaso corto',
+        nivel: 1,
+        contenido: 'Hoy vimos un poco de historia del curso.',
+        palabras: 8,
+      },
+      {
+        titulo: 'Energía',
+        nivel: 1,
+        contenido:
+          'La energía cinética es la energía que tiene un cuerpo por estar en movimiento. Es importante para el examen: Ec = 1/2 m v^2. La energía potencial es la energía almacenada por la posición. La energía se conserva siempre.\n\nTipos de energía:\n\n- Cinética\n- Potencial\n- Térmica',
+        palabras: 45,
+      },
+    ],
+  };
+
+  it('da más importancia a la sección central y con énfasis, y crea tarjetas de listas', () => {
+    const r = analizarSecciones(doc);
+    expect(r.secciones[1]!.importancia!).toBeGreaterThan(r.secciones[0]!.importancia!);
+    expect(r.secciones[1]!.dificultad).not.toBe('baja');
+    expect(r.secciones[0]!.dificultad).toBe('baja');
+    expect(r.secciones[1]!.tarjetas).toContainEqual({
+      frente: 'Tipos de energía: ¿cuáles son?',
+      reverso: 'Cinética; Potencial; Térmica',
+    });
+    const pesos = pesosDeSecciones(r.secciones);
+    expect(pesos.reduce((a, b) => a + b, 0)).toBe(100);
+  });
+
+  it('lee listas con enunciado', () => {
+    expect(listasConEnunciado('Partes:\n- Uno\n- Dos')).toEqual([
+      { termino: 'Partes', definicion: 'Uno; Dos' },
+    ]);
   });
 });
