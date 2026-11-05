@@ -162,7 +162,7 @@ Con eso no hay que armar el plan a mano: los temas entran solos al plan de estud
 Igual que Kuadri: la app en Vercel, la API en Render y MySQL en Aiven (todos con plan gratuito).
 
 1. Base de datos en Aiven: usa el servicio MySQL que ya tengas (por ejemplo el de Kuadri) con `DB_NAME=zaviro`. La API crea la base y las tablas sola al arrancar; `npm run db:init` sirve si quieres prepararla desde tu computador.
-2. API en Render: crea un Web Service desde este repositorio con Root Directory `backend`, Build Command `npm ci --include=dev && npm run build` y Start Command `npm start`. En Environment agrega `NODE_ENV=production`, `JWT_SECRET` (una frase larga y aleatoria), `FRONTEND_URL` (la dirección de Vercel, por ejemplo `https://zaviro.vercel.app`) y las variables `DB_*` de Aiven. Al terminar, `https://<tu-servicio>.onrender.com/api/salud` debe responder.
+2. API en Render: crea un Web Service desde este repositorio con Root Directory `backend`, Build Command `npm install && npm run build` y Start Command `npm start`. En Environment agrega `NODE_ENV=production`, `JWT_SECRET` (una frase larga y aleatoria), `FRONTEND_URL` (la dirección de Vercel, por ejemplo `https://zaviro.vercel.app`) y las variables `DB_*` de Aiven. Al terminar, `https://<tu-servicio>.onrender.com/api/salud` debe responder.
 3. App en Vercel: en Settings, Environment Variables, agrega `VITE_API_URL=https://<tu-servicio>.onrender.com/api` y vuelve a desplegar.
 
 El plan gratuito de Render se duerme cuando no se usa: la primera vez que se entra puede tardar hasta un minuto, y la pantalla de acceso lo avisa.
