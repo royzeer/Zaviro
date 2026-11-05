@@ -9,15 +9,17 @@ import { useConsulta } from '@/db/useConsulta';
 import { useSubida } from '@/estado/subida';
 import { usePerfil } from '@/estado/usePerfil';
 import {
-  definiciones,
   estructurarDocumento,
   fechasDeExamen,
   normalizarPalabra,
-  pesosPorExtension,
+  pesosDeSecciones,
+  tarjetasDeSeccion,
   type DocumentoLeido,
   type FechaExamen,
 } from '@/dominio/documentos';
+import { iaDisponible, organizarConIa } from '@/documentos/ia';
 import { ErrorDocumento, leerArchivo, TIPOS_ACEPTADOS } from '@/documentos/leer';
+import { ErrorApi } from '@/sincronizacion/cliente';
 import { Dialogo } from '@/componentes/Dialogo';
 import { Icono } from '@/componentes/Icono';
 import { fechaInputAIso } from '@/utilidades/fechas';
@@ -26,7 +28,13 @@ interface Lectura {
   archivo: string;
   documento: DocumentoLeido;
   fechas: FechaExamen[];
+  /** Fecha de examen que encontró la IA (AAAA-MM-DD). */
+  fechaIa?: string | null;
+  /** Por qué no se usó la IA, si se intentó. */
+  avisoIa?: string;
 }
+
+const DIFICULTAD = { baja: 'Fácil', media: 'Media', alta: 'Difícil' } as const;
 
 function materiaSugerida(doc: DocumentoLeido, archivo: string, materias: Materia[]) {
   const textos = normalizarPalabra(`${doc.titulo} ${archivo}`);
@@ -44,7 +52,8 @@ function Revision({
   materias: Materia[];
   alTerminar: (r: ResultadoImportacion) => void;
 }) {
-  const { documento, fechas } = lectura;
+  const { documento, fechas, fechaIa } = lectura;
+  const conIa = documento.organizadoPor === 'ia';
   const [materiaId, setMateriaId] = useState(() =>
     materiaSugerida(documento, lectura.archivo, materias),
   );
@@ -52,14 +61,14 @@ function Revision({
   const [elegidas, setElegidas] = useState(() => documento.secciones.map((_, i) => i));
   const materia = materias.find((m) => m.id === materiaId);
   const [fecha, setFecha] = useState(() =>
-    fechas[0] ? format(fechas[0].fecha, 'yyyy-MM-dd') : '',
+    fechaIa ? fechaIa : fechas[0] ? format(fechas[0].fecha, 'yyyy-MM-dd') : '',
   );
   const [tarjetas, setTarjetas] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
-  const pesos = pesosPorExtension(elegidas.map((i) => documento.secciones[i]!.palabras));
+  const pesos = pesosDeSecciones(elegidas.map((i) => documento.secciones[i]!));
   const cantidadDefiniciones = elegidas.reduce(
-    (s, i) => s + definiciones(documento.secciones[i]!.contenido, 6).length,
+    (s, i) => s + tarjetasDeSeccion(documento.secciones[i]!).length,
     0,
   );
 
@@ -80,12 +89,29 @@ function Revision({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-tinta-suave">
-        Leímos <strong className="text-tinta">{lectura.archivo}</strong>: {documento.palabras}{' '}
-        palabras en {documento.secciones.length}{' '}
-        {documento.secciones.length === 1 ? 'sección' : 'secciones'}. Cada sección será un tema con
-        su apunte, y entrará solo a tu plan de estudio.
-      </p>
+      {conIa ? (
+        <div className="flex flex-col gap-1.5 text-sm text-tinta-suave">
+          <span className="chip self-start">
+            <Icono nombre="documento" tamano={14} /> Organizado con IA
+          </span>
+          <p>
+            Analizamos <strong className="text-tinta">{lectura.archivo}</strong> y armamos{' '}
+            {documento.secciones.length} {documento.secciones.length === 1 ? 'tema' : 'temas'} con
+            su apunte de estudio, preguntas de repaso y un peso según lo importante que es cada uno.
+            {documento.resumen ? ` ${documento.resumen}` : ''}
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5 text-sm text-tinta-suave">
+          <p>
+            Leímos <strong className="text-tinta">{lectura.archivo}</strong>: {documento.palabras}{' '}
+            palabras en {documento.secciones.length}{' '}
+            {documento.secciones.length === 1 ? 'sección' : 'secciones'}. Cada sección será un tema
+            con su apunte, y entrará solo a tu plan de estudio.
+          </p>
+          {lectura.avisoIa && <p className="text-xs">{lectura.avisoIa}</p>}
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
@@ -141,7 +167,10 @@ function Revision({
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">{s.titulo}</span>
-                    <span className="text-xs text-tinta-suave">{s.palabras} palabras</span>
+                    <span className="text-xs text-tinta-suave">
+                      {s.dificultad ? `${DIFICULTAD[s.dificultad]} · ` : ''}
+                      {s.palabras} palabras
+                    </span>
                   </span>
                   {peso !== undefined && <span className="chip shrink-0">{peso} %</span>}
                 </label>
@@ -171,9 +200,11 @@ function Revision({
               aria-describedby="doc-fecha-ayuda"
             />
             <p id="doc-fecha-ayuda" className="mt-1.5 text-xs text-tinta-suave">
-              {fechas[0]
-                ? `La encontramos en el documento: "${fechas[0].contexto}".`
-                : 'No encontramos una fecha en el documento. Si la sabes, ponla para que el plan priorice esta materia.'}
+              {fechaIa
+                ? 'La IA la encontró en el documento.'
+                : fechas[0]
+                  ? `La encontramos en el documento: "${fechas[0].contexto}".`
+                  : 'No encontramos una fecha en el documento. Si la sabes, ponla para que el plan priorice esta materia.'}
             </p>
           </>
         )}
@@ -187,8 +218,8 @@ function Revision({
             onChange={(e) => setTarjetas(e.target.checked)}
           />
           Crear {cantidadDefiniciones}{' '}
-          {cantidadDefiniciones === 1 ? 'tarjeta de repaso' : 'tarjetas de repaso'} con las
-          definiciones que encontramos
+          {cantidadDefiniciones === 1 ? 'tarjeta de repaso' : 'tarjetas de repaso'}{' '}
+          {conIa ? 'con las preguntas de la IA' : 'con las definiciones que encontramos'}
         </label>
       )}
 
@@ -244,7 +275,7 @@ export function CentroDocumentos() {
   const registrarSelector = useSubida((s) => s.registrarSelector);
   const entrada = useRef<HTMLInputElement>(null);
   const [abierto, setAbierto] = useState(false);
-  const [leyendo, setLeyendo] = useState(false);
+  const [leyendo, setLeyendo] = useState<'' | 'leyendo' | 'ia'>('');
   const [error, setError] = useState('');
   const [lectura, setLectura] = useState<Lectura | null>(null);
   const [resultado, setResultado] = useState<ResultadoImportacion | null>(null);
@@ -255,16 +286,37 @@ export function CentroDocumentos() {
     if (!archivo) return;
     let vigente = true;
     setAbierto(true);
-    setLeyendo(true);
+    setLeyendo('leyendo');
     setError('');
     setLectura(null);
     setResultado(null);
+    const nivel = perfil?.nivel;
     leerArchivo(archivo)
-      .then((bloques) => {
+      .then(async (bloques) => {
         if (!vigente) return;
         const documento = estructurarDocumento(bloques, archivo.name);
         const texto = documento.secciones.map((s) => s.contenido).join('\n');
-        setLectura({ archivo: archivo.name, documento, fechas: fechasDeExamen(texto, new Date()) });
+        const base: Lectura = {
+          archivo: archivo.name,
+          documento: { ...documento, organizadoPor: 'reglas' },
+          fechas: fechasDeExamen(texto, new Date()),
+        };
+        // Con IA disponible, ella organiza los temas; si falla, se queda lo de las reglas propias.
+        if (documento.palabras > 0 && (await iaDisponible())) {
+          if (!vigente) return;
+          setLeyendo('ia');
+          try {
+            const r = await organizarConIa(documento, archivo.name, nivel);
+            if (vigente) setLectura({ ...base, documento: r.documento, fechaIa: r.fechaExamen });
+            return;
+          } catch (e) {
+            base.avisoIa =
+              e instanceof ErrorApi && e.estado === 413
+                ? 'El documento es muy largo para la IA, así que lo organizamos con el modo automático.'
+                : 'La IA no respondió esta vez, así que lo organizamos con el modo automático.';
+          }
+        }
+        if (vigente) setLectura(base);
       })
       .catch((e: unknown) => {
         if (vigente)
@@ -275,13 +327,15 @@ export function CentroDocumentos() {
           );
       })
       .finally(() => {
-        if (vigente) setLeyendo(false);
+        if (vigente) setLeyendo('');
         elegir(null);
         if (entrada.current) entrada.current.value = '';
       });
     return () => {
       vigente = false;
     };
+    // El perfil solo se lee al empezar; no debe reiniciar la lectura si cambia.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [archivo, elegir]);
 
   function cerrar() {
@@ -305,7 +359,9 @@ export function CentroDocumentos() {
       <Dialogo abierto={abierto} titulo="Subir documento" onCerrar={cerrar} ancho="max-w-2xl">
         {leyendo && (
           <p role="status" className="py-6 text-center text-sm text-tinta-suave">
-            Leyendo el documento…
+            {leyendo === 'ia'
+              ? 'Analizando tus apuntes con IA y armando el plan… puede tardar un par de minutos.'
+              : 'Leyendo el documento…'}
           </p>
         )}
         {error && (

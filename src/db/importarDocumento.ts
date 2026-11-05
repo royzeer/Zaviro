@@ -7,9 +7,9 @@ import type { Materia, PerfilAcademico, Tema } from './esquemas';
 import { crearTarjeta, materiasDePerfil } from './operaciones';
 import { ahoraIso, guardar, nuevoId } from './repositorio';
 import {
-  definiciones,
   normalizarPalabra,
-  pesosPorExtension,
+  pesosDeSecciones,
+  tarjetasDeSeccion,
   type DocumentoLeido,
 } from '@/dominio/documentos';
 import { materiaNueva } from '@/vistas/materias/materiaNueva';
@@ -54,7 +54,7 @@ export async function importarDocumento(
   base: ZaviroDB = db,
 ): Promise<ResultadoImportacion> {
   const elegidas = o.secciones.map((i) => o.documento.secciones[i]).filter((s) => s !== undefined);
-  const pesos = pesosPorExtension(elegidas.map((s) => s.palabras));
+  const pesos = pesosDeSecciones(elegidas);
   const resultado: ResultadoImportacion = {
     materiaId: '',
     temasNuevos: 0,
@@ -116,14 +116,14 @@ export async function importarDocumento(
         );
         resultado.apuntes++;
         if (!o.crearTarjetas) continue;
-        for (const d of definiciones(s.contenido, 6)) {
+        for (const t of tarjetasDeSeccion(s)) {
           await crearTarjeta(
             {
               origenTipo: 'apunte',
               origenId: apunte.id,
               temaId: tema.id,
-              frente: `¿Qué es ${d.termino}?`,
-              reverso: d.definicion,
+              frente: t.frente,
+              reverso: t.reverso,
             },
             base,
           );
