@@ -43,15 +43,10 @@ export function alExpirarSesion(f: () => void) {
   alExpirar = f;
 }
 
-async function peticion<T>(
-  metodo: string,
-  ruta: string,
-  cuerpo?: unknown,
-  espera = ESPERA_MAXIMA_MS,
-): Promise<T> {
+async function peticion<T>(metodo: string, ruta: string, cuerpo?: unknown): Promise<T> {
   const token = obtenerToken();
   const control = new AbortController();
-  const reloj = setTimeout(() => control.abort(), espera);
+  const reloj = setTimeout(() => control.abort(), ESPERA_MAXIMA_MS);
   let respuesta: Response;
   try {
     respuesta = await fetch(`${URL_API}${ruta}`, {
@@ -89,9 +84,7 @@ async function peticion<T>(
 
 export const api = {
   get: <T>(ruta: string) => peticion<T>('GET', ruta),
-  /** `espera` en milisegundos, para peticiones largas como el análisis con IA. */
-  post: <T>(ruta: string, cuerpo?: unknown, espera?: number) =>
-    peticion<T>('POST', ruta, cuerpo ?? {}, espera),
+  post: <T>(ruta: string, cuerpo?: unknown) => peticion<T>('POST', ruta, cuerpo ?? {}),
   put: <T>(ruta: string, cuerpo?: unknown) => peticion<T>('PUT', ruta, cuerpo ?? {}),
   delete: <T>(ruta: string, cuerpo?: unknown) => peticion<T>('DELETE', ruta, cuerpo ?? {}),
 };

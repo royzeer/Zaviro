@@ -26,37 +26,12 @@ export interface Seccion {
   /** Contenido en Markdown. */
   contenido: string;
   palabras: number;
-  /** Importancia de 1 a 10 que decidió la IA; sin ella el peso sale de la extensión. */
-  importancia?: number;
-  dificultad?: 'baja' | 'media' | 'alta';
-  /** Preguntas de repaso escritas por la IA; sin ellas se buscan definiciones en el texto. */
-  tarjetas?: { frente: string; reverso: string }[];
 }
 
 export interface DocumentoLeido {
   titulo: string;
   secciones: Seccion[];
   palabras: number;
-  /** Quién organizó los temas: la IA (Claude) o las reglas propias de la app. */
-  organizadoPor?: 'ia' | 'reglas';
-  /** Resumen de la IA sobre de qué tratan los apuntes. */
-  resumen?: string;
-}
-
-/** Pesos (en %) de las secciones: por importancia si la IA la dio, si no por extensión. */
-export function pesosDeSecciones(secciones: Seccion[]): number[] {
-  if (secciones.length > 0 && secciones.every((s) => s.importancia !== undefined))
-    return pesosPorExtension(secciones.map((s) => s.importancia!));
-  return pesosPorExtension(secciones.map((s) => s.palabras));
-}
-
-/** Tarjetas de repaso de una sección: las de la IA o, si no hay, las definiciones del texto. */
-export function tarjetasDeSeccion(s: Seccion, maximo = 6): { frente: string; reverso: string }[] {
-  if (s.tarjetas) return s.tarjetas.slice(0, maximo);
-  return definiciones(s.contenido, maximo).map((d) => ({
-    frente: `¿Qué es ${d.termino}?`,
-    reverso: d.definicion,
-  }));
 }
 
 const NUMERADO =

@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { env } from '../config/env';
-import { authCtrl, iaCtrl, sincronizacionCtrl } from '../controllers';
-import { requiereAuth, usuarioDe } from '../middlewares/auth';
+import { authCtrl, sincronizacionCtrl } from '../controllers';
+import { requiereAuth } from '../middlewares/auth';
 
 export const rutas = Router();
 
@@ -32,20 +32,3 @@ rutas.delete('/auth/cuenta', limiteAcceso, authCtrl.borrarCuenta);
 rutas.get('/sincronizacion', sincronizacionCtrl.traer);
 rutas.post('/sincronizacion', sincronizacionCtrl.enviar);
 rutas.get('/sincronizacion/resumen', sincronizacionCtrl.resumen);
-
-// La IA cuesta por uso: cada cuenta tiene un límite de documentos por hora.
-const limiteIa = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  limit: env.ia.limitePorHora,
-  keyGenerator: (req) => `usuario-${usuarioDe(req)}`,
-  standardHeaders: 'draft-8',
-  legacyHeaders: false,
-  message: {
-    ok: false,
-    data: null,
-    mensaje: 'Ya analizaste muchos documentos esta hora. Intenta más tarde.',
-  },
-});
-
-rutas.get('/ia/estado', iaCtrl.estado);
-rutas.post('/ia/plan', limiteIa, iaCtrl.organizar);

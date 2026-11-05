@@ -2,7 +2,6 @@
 import type { Request, Response } from 'express';
 import { usuarioDe } from '../middlewares/auth';
 import * as auth from '../services/auth.service';
-import * as ia from '../services/ia.service';
 import * as sincronizacion from '../services/sincronizacion.service';
 import { exito } from '../utils/respuesta';
 
@@ -33,10 +32,4 @@ export const sincronizacionCtrl = {
     exito(res, await sincronizacion.enviar(usuarioDe(req), req.body)),
   resumen: async (req: Request, res: Response) =>
     exito(res, await sincronizacion.resumen(usuarioDe(req))),
-};
-
-export const iaCtrl = {
-  estado: (_req: Request, res: Response) => exito(res, { disponible: ia.iaDisponible() }),
-  organizar: async (req: Request, res: Response) =>
-    exito(res, await ia.organizarApuntes(req.body), 'Plan creado con IA'),
 };
