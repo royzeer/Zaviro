@@ -29,6 +29,13 @@ export const env = {
     ssl: process.env.DB_SSL === 'true',
     certificadoCa: (process.env.DB_CA_CERT || '').replace(/\\n/g, '\n'),
   },
+  /** Inteligencia artificial (Claude) para organizar los apuntes. Sin clave, la app usa su modo propio. */
+  ia: {
+    clave: (process.env.ANTHROPIC_API_KEY || '').trim(),
+    modelo: (process.env.ANTHROPIC_MODEL || 'claude-opus-5-5').trim(),
+    /** Documentos que cada usuario puede analizar por hora (controla el gasto). */
+    limitePorHora: Number(process.env.IA_LIMITE_POR_HORA) || 15,
+  },
   jwt: {
     secreto: secretoJwt(),
     expira: process.env.JWT_EXPIRES_IN || '30d',
