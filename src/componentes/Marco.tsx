@@ -45,7 +45,7 @@ function EnlaceNav({
       aria-current={activa ? 'page' : undefined}
       className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
         activa
-          ? 'bg-fondo text-tinta shadow-tarjeta'
+          ? 'bg-superficie/90 text-tinta shadow-tarjeta'
           : 'text-lateral-tinta hover:bg-lateral-tinta/10 hover:text-lateral-tinta'
       }`}
     >
@@ -142,12 +142,14 @@ function EstadoNube() {
 
 function BarraLateral() {
   return (
-    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-lateral p-5 lg:flex">
-      <Marca />
-      <Navegacion />
-      <div className="mt-auto">
-        <TarjetaConsejo />
-        <EstadoNube />
+    <aside className="sticky top-0 hidden h-dvh w-[17.5rem] shrink-0 p-3 pr-0 lg:block">
+      <div className="vidrio-fuerte flex h-full flex-col gap-6 overflow-y-auto rounded-[1.75rem] p-5">
+        <Marca />
+        <Navegacion />
+        <div className="mt-auto">
+          <TarjetaConsejo />
+          <EstadoNube />
+        </div>
       </div>
     </aside>
   );
@@ -180,7 +182,7 @@ function MenuMovil() {
       />
       <div
         ref={panel}
-        className="absolute inset-y-0 left-0 flex w-[82%] max-w-xs animate-aparecer flex-col gap-6 overflow-y-auto bg-lateral p-5 shadow-flotante"
+        className="vidrio-fuerte absolute inset-y-2 left-2 flex w-[82%] max-w-xs animate-aparecer flex-col gap-6 overflow-y-auto rounded-[1.75rem] bg-superficie/80 p-5"
       >
         <div className="flex items-center justify-between">
           <Marca />
@@ -210,7 +212,7 @@ function BarraInferior() {
   return (
     <nav
       aria-label="Accesos rápidos"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-linea bg-superficie/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      className="vidrio-fuerte fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 rounded-[1.5rem] bg-superficie/75 lg:hidden"
     >
       <ul className="mx-auto grid max-w-md grid-cols-5">
         {rutasVisibles(undefined)
@@ -227,7 +229,7 @@ function BarraInferior() {
                   }`}
                 >
                   <span
-                    className={`rounded-full px-3 py-1 ${activa ? 'bg-superficie-2 text-acento' : ''}`}
+                    className={`rounded-full px-3 py-1 ${activa ? 'bg-primario text-sobre-primario' : ''}`}
                   >
                     <Icono nombre={r.icono} tamano={20} />
                   </span>
@@ -259,7 +261,7 @@ function BotonTema() {
   return (
     <button
       onClick={() => setTema(oscuro ? 'claro' : 'oscuro')}
-      className="grid h-10 w-10 place-items-center rounded-xl border border-linea bg-superficie text-tinta-suave hover:text-tinta"
+      className="vidrio grid h-10 w-10 place-items-center rounded-full text-tinta-suave hover:text-tinta"
       aria-label={oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
       title={oscuro ? 'Modo claro' : 'Modo oscuro'}
     >
@@ -284,7 +286,7 @@ function Encabezado({ titulo, descripcion }: { titulo: string; descripcion: stri
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <div className="hidden items-center gap-2 rounded-xl border border-linea bg-superficie px-3 py-2 text-sm font-semibold text-tinta-suave sm:flex">
+        <div className="vidrio hidden h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold text-tinta-suave sm:flex">
           <Icono nombre="calendario" tamano={16} />
           <time dateTime={ahora.toISOString()}>
             {format(ahora, "EEEE d 'de' MMMM", { locale: es })}

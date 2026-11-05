@@ -33,7 +33,7 @@ export function Dialogo({
       }}
       onClick={(e) => e.target === ref.current && onCerrar()}
       aria-label={titulo}
-      className={`w-[calc(100%-2rem)] ${ancho} rounded-tarjeta border border-linea bg-superficie p-0 text-tinta shadow-flotante backdrop:bg-tinta/40 backdrop:backdrop-blur-[2px]`}
+      className={`w-[calc(100%-2rem)] ${ancho} vidrio-fuerte rounded-tarjeta bg-superficie/90 p-0 text-tinta backdrop:bg-tinta/30 backdrop:backdrop-blur-md`}
     >
       {abierto && (
         <div className="flex max-h-[85dvh] flex-col">

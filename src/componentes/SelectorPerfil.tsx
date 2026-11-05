@@ -31,9 +31,9 @@ export function SelectorPerfil() {
         onClick={() => setAbierto(!abierto)}
         aria-expanded={abierto}
         aria-haspopup="true"
-        className="flex h-10 max-w-[15rem] items-center gap-2 rounded-xl border border-linea bg-superficie pl-1 pr-3 text-left text-sm font-semibold"
+        className="vidrio flex h-10 max-w-[15rem] items-center gap-2 rounded-full pl-1 pr-3 text-left text-sm font-semibold sm:pr-4"
       >
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-lateral text-lateral-tinta">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primario text-sobre-primario">
           <Icono nombre="perfil" tamano={18} />
         </span>
         <span className="hidden min-w-0 leading-tight sm:block">
@@ -49,7 +49,7 @@ export function SelectorPerfil() {
         <span className="sr-only">Cambiar de perfil</span>
       </button>
       {abierto && (
-        <div className="absolute right-0 top-12 z-30 w-72 animate-aparecer rounded-2xl border border-linea bg-superficie p-2 shadow-flotante">
+        <div className="vidrio-fuerte absolute right-0 top-12 z-30 w-72 animate-aparecer rounded-2xl bg-superficie/85 p-2">
           <p className="px-2 pb-1 pt-1 text-[11px] font-bold uppercase tracking-wide text-tinta-suave">
             Perfiles
           </p>
